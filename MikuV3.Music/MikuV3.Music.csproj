@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AngleSharp" Version="0.13.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DSharpPlus\DSharpPlus.CommandsNext\DSharpPlus.CommandsNext.csproj" />
+    <ProjectReference Include="..\DSharpPlus\DSharpPlus.Interactivity\DSharpPlus.Interactivity.csproj" />
+    <ProjectReference Include="..\DSharpPlus\DSharpPlus.VoiceNext\DSharpPlus.VoiceNext.csproj" />
+    <ProjectReference Include="..\DSharpPlus\DSharpPlus\DSharpPlus.csproj" />
+  </ItemGroup>
+
+</Project>
