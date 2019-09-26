@@ -179,6 +179,8 @@ namespace DSharpPlus.VoiceNext
         /// </summary>
         public DiscordChannel Channel { get; internal set; }
 
+        public bool Paused = false;
+
         internal VoiceNextConnection(DiscordClient client, DiscordGuild guild, DiscordChannel channel, VoiceNextConfiguration config, VoiceServerUpdatePayload server, VoiceStateUpdatePayload state)
         {
             this.Discord = client;
@@ -359,7 +361,10 @@ namespace DSharpPlus.VoiceNext
 
             while (!token.IsCancellationRequested)
             {
-                var hasPacket = queue.TryDequeue(out var packet);
+                var packet = new VoicePacket();
+                var hasPacket = true;
+                if (!Paused)
+                    hasPacket = queue.TryDequeue(out packet);
 
                 byte[] packetArray = null;
                 if (hasPacket)
@@ -390,7 +395,7 @@ namespace DSharpPlus.VoiceNext
 
                 synchronizerTicks += synchronizerResolution * durationModifier;
 
-                if (!hasPacket)
+                if (!hasPacket || Paused)
                     continue;
 
                 this.SendSpeaking(true);
@@ -587,6 +592,11 @@ namespace DSharpPlus.VoiceNext
             }
         }
 
+        public void Pause()
+            => Paused = true;
+
+        public void UnPause()
+            => Paused = false;
         /// <summary>
         /// Sends a speaking status to the connected voice channel.
         /// </summary>
