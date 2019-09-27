@@ -328,3 +328,5 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+/MikuV3.Music/youtube-dl.exe
+/MikuV3.Music/ffmpeg.exe
