@@ -34,5 +34,21 @@ namespace MikuV3.Music.Commands
             vnc.Disconnect();
             await ctx.RespondAsync("dc");
         }
+
+        [Command("play")]
+        [Priority(1)]
+        public async Task Play(CommandContext ctx, [RemainingText] string url)
+        {
+            var vnext = ctx.Client.GetVoiceNext();
+            var vnc = vnext.GetConnection(ctx.Guild);
+        }
+
+        [Command("play")]
+        [Priority(0)]
+        public async Task Play(CommandContext ctx)
+        {
+            await ctx.RespondAsync("no");
+            throw new NotImplementedException(ctx.Command.Name);
+        }
     }
 }
