@@ -4,7 +4,6 @@ using DSharpPlus.Interactivity;
 using DSharpPlus.Interactivity.Enums;
 using DSharpPlus.VoiceNext;
 using MikuV3.Music.Entities;
-using MikuV3.Music.Commands;
 using MikuV3.Music.Utilities;
 using System;
 using System.Collections.Generic;
@@ -65,6 +64,7 @@ namespace MikuV3.Music
                 return Task.CompletedTask;
             };
             _cnext.RegisterCommands<Commands.Music>();
+            _cnext.RegisterCommands<Commands.Debug>();
         }
 
         public async Task RunBot()
