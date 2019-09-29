@@ -19,11 +19,9 @@ namespace MikuV3.Music.Commands
             var sw = new Stopwatch();
             var su = new ServiceUtil();
             sw.Start();
-            //var it = await su.GetService(n);
-            var exp = new YoutubeClient();
-            var f = YoutubeClient.ParseVideoId(n);
+            var it = su.GetService(n);
             sw.Stop();
-            await ctx.RespondAsync(Environment.NewLine + sw.Elapsed.TotalSeconds);
+            await ctx.RespondAsync(it.ContentService + " " + it.Playlist + Environment.NewLine + sw.Elapsed.TotalSeconds);
         }
     }
 }

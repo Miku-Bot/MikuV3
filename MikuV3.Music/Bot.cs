@@ -60,7 +60,7 @@ namespace MikuV3.Music
             };
             _cnext.CommandErrored += e =>
             {
-                Console.WriteLine(e);
+                Console.WriteLine(e.Exception);
                 return Task.CompletedTask;
             };
             _cnext.RegisterCommands<Commands.Music>();
