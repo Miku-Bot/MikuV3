@@ -65,6 +65,7 @@ namespace MikuV3.Music.ServiceExtractors
                 h5 = JsonConvert.DeserializeObject<NNDHTML.Root>(h5Part.GetAttribute("data-api-data"));
             else
                 fl = JsonConvert.DeserializeObject<NNDFlash.Root>(parsedDoc.GetElementById("watchAPIDataContainer").TextContent);
+            ServiceResult.DirectUrl = $"https://www.nicovideo.jp/watch/{nndID}";
             ServiceResult.Url = $"https://www.nicovideo.jp/watch/{nndID}";
             ServiceResult.Slow = true;
             ServiceResult.ContentService = Enums.ContentService.NicoNicoDouga;

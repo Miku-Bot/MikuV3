@@ -4,7 +4,10 @@ using System.Text;
 
 namespace MikuV3.Music.Enums
 {
-    class Repeatmode
+    public enum RepeatMode
     {
+        Off = 0,
+        On = 1,
+        All = 2
     }
 }

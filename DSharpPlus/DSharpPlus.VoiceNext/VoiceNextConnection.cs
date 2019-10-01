@@ -129,7 +129,7 @@ namespace DSharpPlus.VoiceNext
 
         private TaskCompletionSource<bool> PlayingWait { get; set; }
 
-        private ConcurrentQueue<VoicePacket> PacketQueue { get; }
+        private ConcurrentQueue<VoicePacket> PacketQueue { get; set; }
         private VoiceTransmitStream TransmitStream { get; set; }
         private ConcurrentDictionary<ulong, long> KeepaliveTimestamps { get; }
         private ulong _lastKeepalive = 0;
@@ -590,6 +590,10 @@ namespace DSharpPlus.VoiceNext
                     await this.ProcessVoicePacket(data).ConfigureAwait(false);
 #endif
             }
+        }
+        public void Stop()
+        {
+            PacketQueue = new ConcurrentQueue<VoicePacket>(); ;
         }
 
         public void Pause()

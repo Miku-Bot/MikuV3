@@ -18,6 +18,7 @@ namespace MikuV3.Music.Entities
         public string Artist { get; set; }
         public string Title { get; set; }
         public TimeSpan Length { get; set; }
+        public string DirectUrl { get; set; }
         public string Url { get; set; }
         public Task FillCacheTask { get; set; }
 
