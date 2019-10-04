@@ -10,7 +10,6 @@ namespace MikuV3.Music.Entities
         public ulong addedBy { set; get; }
         public QueueEntry(ServiceResult sr, ulong ab, int pos) : base(sr)
         {
-            additionTime = DateTimeOffset.UtcNow;
             position = pos;
             addedBy = ab;
         }

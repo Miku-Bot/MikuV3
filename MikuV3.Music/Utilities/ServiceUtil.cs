@@ -18,6 +18,7 @@ namespace MikuV3.Music.Utilities
             //URL Check
             try { new Uri(url); }
             catch { return new ContentServiceMatch(ContentService.Search, Playlist.No); }
+
             //Youtube Single
             if ((Regex.IsMatch(url, YT) && !Regex.IsMatch(url, YT_PL))
                 || Regex.IsMatch(url, YT_LIVE)) return new ContentServiceMatch(ContentService.Youtube, Playlist.No);
