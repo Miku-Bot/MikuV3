@@ -15,7 +15,7 @@ using Newtonsoft.Json;
 
 namespace MikuV3.Music.ServiceExtractors
 {
-    public class NicoNicoDouga : IServiceExtractor
+    public class NicoNicoDougaSingle : IServiceExtractor
     {
         HttpClientHandler handler { get; set; }
         public HttpClient _c { get; set; }
@@ -27,7 +27,7 @@ namespace MikuV3.Music.ServiceExtractors
         public List<string> DirectUrls { get; set; }
         public string Url { get; set; }
 
-        public NicoNicoDouga()
+        public NicoNicoDougaSingle()
         {
             var cc = new CookieContainer();
             handler = new HttpClientHandler
@@ -41,14 +41,14 @@ namespace MikuV3.Music.ServiceExtractors
             DirectUrls = new List<string>();
         }
 
-        public async Task<ServiceResult> GetServiceResult(string url)
+        public async Task<List<ServiceResult>> GetServiceResult(string url)
         {
             var login = await DoLogin();
             if (!login.IsSuccessStatusCode) throw new NNDLoginException(login.ReasonPhrase);
             var durl = await GetDirectUri(url);
             if (durl == null)return null;
-            var sr = new ServiceResult(Enums.ContentService.NicoNicoDouga, _c, Length, DirectUrls, Url, null, Artist, Title, true);
-            sr.FillCacheTask = Task.Run(sr.FillCache);
+            var sr = new List<ServiceResult>();
+            sr.Add(new ServiceResult(Enums.ContentService.NicoNicoDouga, _c, Length, DirectUrls, Url, null, Artist, Title, true));
             return sr;
         }
 
@@ -66,7 +66,7 @@ namespace MikuV3.Music.ServiceExtractors
         {
             var split = url.Split("/".ToCharArray());
             var nndID = split.First(x => x.StartsWith("sm") || x.StartsWith("nm")).Split("?")[0];
-            Console.WriteLine(nndID);
+            //Console.WriteLine(nndID);
             var videoPage = await _c.GetStringAsync(new Uri($"https://www.nicovideo.jp/watch/{nndID}"));
             var parser = new HtmlParser();
             var parsedDoc = await parser.ParseDocumentAsync(videoPage);
@@ -87,7 +87,7 @@ namespace MikuV3.Music.ServiceExtractors
             else 
             {
                 var directVideoUri = fl.flashvars.flvInfo.Replace("%253A%252F%252F", "://").Replace("%252F", "/").Replace("%253F", "?").Replace("%253D", "=").Split("%3D").First(x => x.StartsWith("http")).Split("%26")[0];
-                Title = fl.videoDetail.title;
+                Title = fl.videoDetail.title_original;
                 Artist = fl.uploaderInfo?.nickname == null ? "n/a" : fl.uploaderInfo.nickname;
                 Length = TimeSpan.FromSeconds(fl.videoDetail.length);
                 DirectUrls.Add(directVideoUri);

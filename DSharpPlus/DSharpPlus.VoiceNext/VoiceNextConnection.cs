@@ -416,7 +416,10 @@ namespace DSharpPlus.VoiceNext
                 else if (queue.Count == 0)
                 {
                     this.SendSpeaking(false);
-                    this.PlayingWait?.SetResult(true);
+                    if (!this.Paused)
+                    {
+                        this.PlayingWait?.SetResult(true);
+                    }
                 }
             }
         }

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace MikuV3.Music.ServiceExtractors
 {
-    public class YoutubeSingle : IServiceExtractor
+    public class BilibiliSingle : IServiceExtractor
     {
         HttpClient _c { get; set; }
         YTDL.Root ytdlGot { get; set; }
@@ -42,7 +42,9 @@ namespace MikuV3.Music.ServiceExtractors
                 urls.Add(aud.url);
             }
             var sr = new List<ServiceResult>();
-            sr.Add(new ServiceResult(Enums.ContentService.Youtube, _c, TimeSpan.FromSeconds(ytdlGot.duration), urls, url, null, ytdlGot.uploader, ytdlGot.title));
+            _c.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:68.0) Gecko/20100101 Firefox/68.0");
+            _c.DefaultRequestHeaders.Add("Referer", url);
+            sr.Add(new ServiceResult(Enums.ContentService.BiliBili, _c, TimeSpan.FromSeconds(ytdlGot.duration), urls, url, null, ytdlGot.uploader, ytdlGot.title));
             //sr.FillCacheTask = Task.Run(sr.FillCache);
             return sr;
         }

@@ -8,6 +8,6 @@ namespace MikuV3.Music.ServiceExtractors
 {
     public interface IServiceExtractor
     {
-        Task<ServiceResult> GetServiceResult(string url);
+        Task<List<ServiceResult>> GetServiceResult(string url);
     }
 }

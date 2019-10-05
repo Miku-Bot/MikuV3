@@ -55,6 +55,15 @@ namespace MikuV3.Music.Commands
         [Priority(1)]
         public async Task Play(CommandContext ctx, [RemainingText] string url)
         {
+            if (!Bot._mi.Any(x => x.Key == ctx.Guild.Id))
+            {
+                Bot._mi.Add(ctx.Guild.Id, new MusicInstance(ctx.Guild));
+            }
+            var g = Bot._mi[ctx.Guild.Id];
+            g.usedChannel = ctx.Channel;
+            if (g.vnc == null) await g.ConnectToChannel(ctx.Member.VoiceState.Channel);
+            var q = await g.QueueSong(ctx, url);
+            /*
             var vnext = ctx.Client.GetVoiceNext();
             var vnc = vnext.GetConnection(ctx.Guild);
             var su = new ServiceUtil();
@@ -66,7 +75,7 @@ namespace MikuV3.Music.Commands
             while (yes.PCMCache == null) await Task.Delay(100);
             var srgot = yes.PCMCache;
             await srgot.CopyToAsync(txStream);
-            await txStream.FlushAsync();
+            await txStream.FlushAsync();*/
         }
 
         [Command("play")]

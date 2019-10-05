@@ -27,7 +27,7 @@ namespace MikuV3.Music
             _c = new DiscordClient(new DiscordConfiguration {
                 Token = config.DiscordToken,
                 TokenType = TokenType.Bot,
-                LogLevel = LogLevel.Debug,
+                LogLevel = LogLevel.Error,
                 UseInternalLogHandler = true,
                 ShardCount = 3,
                 ShardId = 0
@@ -69,6 +69,7 @@ namespace MikuV3.Music
 
         public async Task RunBot()
         {
+            _mi = new Dictionary<ulong, MusicInstance>();
             await _c.ConnectAsync();
             await Task.Delay(-1);
         } 
