@@ -13,11 +13,15 @@ namespace MikuV3.Music.Entities
     public class ServiceResult
     {
         public ContentService ContentService { get; set; }
+        public Playlist Playlist { get; set; }
         public CacheStatus CacheStatus { get; set; }
         public HttpClient Client { get; set; }
         public HttpResponseMessage ResponseMsg { get; set; }
         public Stream PCMCache { get; set; }
         public string Artist { get; set; }
+        public string ArtistUrl { get; set; }
+        public string ThumbnailUrl { get; set; }
+        public DateTime UploadDate { get; set; }
         public string Title { get; set; }
         public TimeSpan Length { get; set; }
         public Stopwatch CurrentPosition = new Stopwatch();
@@ -30,11 +34,14 @@ namespace MikuV3.Music.Entities
         public long Status = 0;
         public int Percentage = 0;
 
-        public ServiceResult(ContentService cs, HttpClient c, TimeSpan l, List<string> du, string u, HttpResponseMessage resp = null, string a = "n/a", string t = "n/a", bool s = false)
+        public ServiceResult(ContentService cs, Playlist pl, HttpClient c, TimeSpan l, List<string> du, string u, DateTime ud, HttpResponseMessage resp = null, string tu = null, string a = "n/a", string au = "n/a", string t = "n/a", bool s = false)
         {
             ContentService = cs;
             Client = c;
             Length = l;
+            ThumbnailUrl = tu;
+            ArtistUrl = au;
+            UploadDate = ud;
             DirectUrls = new List<string>();
             DirectUrls = du;
             Url = u;

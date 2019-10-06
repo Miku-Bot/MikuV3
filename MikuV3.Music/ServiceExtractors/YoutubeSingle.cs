@@ -1,4 +1,5 @@
 ﻿using MikuV3.Music.Entities;
+using MikuV3.Music.Utilities;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -42,7 +43,7 @@ namespace MikuV3.Music.ServiceExtractors
                 urls.Add(aud.url);
             }
             var sr = new List<ServiceResult>();
-            sr.Add(new ServiceResult(Enums.ContentService.Youtube, _c, TimeSpan.FromSeconds(ytdlGot.duration), urls, url, null, ytdlGot.uploader, ytdlGot.title));
+            sr.Add(new ServiceResult(Enums.ContentService.Youtube, Enums.Playlist.No, _c, TimeSpan.FromSeconds(ytdlGot.duration), urls, url, TimeConversion.ParseYTDLDate(ytdlGot.upload_date), null, ytdlGot.thumbnail, ytdlGot.uploader, ytdlGot.uploader_url, ytdlGot.title));
             //sr.FillCacheTask = Task.Run(sr.FillCache);
             return sr;
         }

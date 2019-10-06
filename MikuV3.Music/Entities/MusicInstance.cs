@@ -4,6 +4,7 @@ using DSharpPlus.VoiceNext;
 using MikuV3.Music.Enums;
 using MikuV3.Music.ServiceExtractors;
 using MikuV3.Music.Utilities;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -117,7 +118,11 @@ namespace MikuV3.Music.Entities
             }
             if (sr != null)
             {
-                Console.WriteLine("Wat");
+                Console.WriteLine(sr.Artist + " - " + sr.Title);
+                var plainJson = JsonConvert.SerializeObject(new DBQueueEntryJson(sr));
+                var plainBytes = Encoding.UTF8.GetBytes(plainJson);
+                var encodedJson = Convert.ToBase64String(plainBytes);
+                //Database.AddToQueue(ctx.Guild, ctx.Member.Id, encodedJson);
                 tempQueue.Add(new QueueEntry(sr, ctx.Member.Id, tempQueue.Count));
                 if (tempQueue.Count == 2) nextSong = new QueueEntry(sr, ctx.Member.Id, tempQueue.Count);
                 if (vnc.Channel != null && (playstate == Playstate.NotPlaying || playstate == Playstate.Stopped)) await PlaySong(); 
