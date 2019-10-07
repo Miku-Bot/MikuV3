@@ -59,7 +59,12 @@ namespace MikuV3.Music.Entities
             switch (gs.ContentService)
             {
                 case ContentService.Search: break;
-                case ContentService.Direct: break;
+                case ContentService.Direct:
+                    {
+                        var s1 = await new Generic().GetServiceResult(s);
+                        sr = s1[0];
+                        break;
+                    }
                 case ContentService.Youtube:
                     {
                         switch (gs.Playlist)
@@ -137,7 +142,7 @@ namespace MikuV3.Music.Entities
                 Console.WriteLine("here");
                 await Task.Delay(0);
                 var queue = tempQueue;
-                if (currentSong == null) currentSong = queue[0];
+                currentSong = queue[0];
                 var cur = lastSong;
                 if (queue.Count != 1 && repeatMode == RepeatMode.All)
                     repeatAllPos++;
@@ -208,7 +213,7 @@ namespace MikuV3.Music.Entities
                 playstate = Playstate.NotPlaying;
                 lastSong = currentSong;
                 currentSong = nextSong;
-                await PlaySong();
+                if (tempQueue.Count != 0)await PlaySong();
             }
             catch (Exception ex)
             {

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace MikuV3.Music.ServiceExtractors
 {
-    public class BilibiliSingle : IServiceExtractor
+    public class Generic : IServiceExtractor
     {
         HttpClient _c { get; set; }
         YTDL.Root ytdlGot { get; set; }
@@ -43,9 +43,7 @@ namespace MikuV3.Music.ServiceExtractors
                 urls.Add(aud.url);
             }
             var sr = new List<ServiceResult>();
-            _c.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:68.0) Gecko/20100101 Firefox/68.0");
-            _c.DefaultRequestHeaders.Add("Referer", url);
-            sr.Add(new ServiceResult(Enums.ContentService.BiliBili, Enums.Playlist.No, _c, TimeSpan.FromSeconds(ytdlGot.duration), urls, url, TimeConversion.ParseYTDLDate(ytdlGot.upload_date), null, ytdlGot.thumbnails[0].url,ytdlGot.uploader, "https://space.bilibili.com/" + ytdlGot.uploader_id, ytdlGot.title));
+            sr.Add(new ServiceResult(Enums.ContentService.Youtube, Enums.Playlist.No, _c, TimeSpan.FromSeconds(ytdlGot.duration), urls, url, TimeConversion.ParseYTDLDate(ytdlGot.upload_date), null, ytdlGot.thumbnail, ytdlGot.uploader, ytdlGot.uploader_url, ytdlGot.title));
             //sr.FillCacheTask = Task.Run(sr.FillCache);
             return sr;
         }
