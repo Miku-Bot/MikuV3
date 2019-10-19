@@ -1,22 +1,19 @@
-﻿using MikuV3.Music.Enums;
+﻿using MikuV3.Music.ServiceManager.Enums;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace MikuV3.Music.Entities
+namespace MikuV3.Music.ServiceManager.Entities
 {
     public class ServiceResult
     {
         public ContentService ContentService { get; set; }
         public Playlist Playlist { get; set; }
         public CacheStatus CacheStatus { get; set; }
-        public HttpClient Client { get; set; }
-        public HttpResponseMessage ResponseMsg { get; set; }
+        HttpClient _c { get; set; }
         public Stream PCMCache { get; set; }
         public string Artist { get; set; }
         public string ArtistUrl { get; set; }
@@ -24,31 +21,42 @@ namespace MikuV3.Music.Entities
         public DateTime UploadDate { get; set; }
         public string Title { get; set; }
         public TimeSpan Length { get; set; }
+        //Dont know if this will work out for keeping track of the trackposition, but might work
         public Stopwatch CurrentPosition = new Stopwatch();
         public List<string> DirectUrls { get; set; }
         public string Url { get; set; }
         public Task FillCacheTask { get; set; }
         public bool Slow = false;
-        public Task StatusTask { get; set; }
+        Task statusTask { get; set; }
         public long ContentLength = 0;
         public long Status = 0;
         public int Percentage = 0;
 
-        public ServiceResult(ContentService cs, Playlist pl, HttpClient c, TimeSpan l, List<string> du, string u, DateTime ud, HttpResponseMessage resp = null, string tu = null, string a = "n/a", string au = "n/a", string t = "n/a", bool s = false)
+        public ServiceResult(ContentService contentService,
+            Playlist playlist,
+            HttpClient client,
+            TimeSpan length,
+            List<string> directUrls, 
+            string url,
+            DateTime uploadDate,
+            string artist = "n/a",
+            string artistUrl = "n/a",
+            string title = "n/a",
+            string thumbnailUrl = null,
+            bool slow = false)
         {
-            ContentService = cs;
-            Client = c;
-            Length = l;
-            ThumbnailUrl = tu;
-            ArtistUrl = au;
-            UploadDate = ud;
-            DirectUrls = new List<string>();
-            DirectUrls = du;
-            Url = u;
-            ResponseMsg = resp;
-            Artist = a;
-            Title = t;
-            Slow = s;
+            ContentService = contentService;
+            Playlist = playlist;
+            _c = client;
+            Length = length;
+            ThumbnailUrl = thumbnailUrl;
+            ArtistUrl = artistUrl;
+            UploadDate = uploadDate;
+            DirectUrls = directUrls;
+            Url = url;
+            Artist = artist;
+            Title = title;
+            Slow = slow;
         }
 
         public async Task FillCache()
@@ -57,7 +65,6 @@ namespace MikuV3.Music.Entities
             {
                 await Task.Delay(0);
                 CacheStatus = CacheStatus.Rendering;
-                var Response = ResponseMsg;
                 var psi2 = new ProcessStartInfo()
                 {
                     FileName = @"ffmpeg.exe",
@@ -73,42 +80,42 @@ namespace MikuV3.Music.Entities
                     {
                         foreach(var part in DirectUrls)
                         {
-                            Response = await Client.GetAsync(part, HttpCompletionOption.ResponseHeadersRead);
+                            var Response = await _c.GetAsync(part, HttpCompletionOption.ResponseHeadersRead);
                             ContentLength += (long)Response.Content.Headers.ContentLength;
                         }
-                        //StatusTask = Task.Run(PrintStatus);
                         foreach (var part in DirectUrls)
                         {
-                            Response = await Client.GetAsync(part, HttpCompletionOption.ResponseHeadersRead);
+                            var Response = await _c.GetAsync(part, HttpCompletionOption.ResponseHeadersRead);
                             using (var thedata = await Response.Content.ReadAsStreamAsync())
                             {
                                 int read = -1;
                                 while (read != 0)
                                 {
-                                    var mem = new MemoryStream();
+                                    var cacheMemoryStream = new MemoryStream();
                                     byte[] buffer = new byte[3840];
                                     if (Slow)
                                     {
                                         while (((read = thedata.Read(buffer, 0, buffer.Length)) > 0))
                                         {
                                             Status += Convert.ToInt64(read);
-                                            var stat = (100.0 / Convert.ToDouble(ContentLength)) * Convert.ToDouble(Status);
-                                            Percentage = Convert.ToInt32(stat);
-                                            mem.Write(buffer, 0, read);
+                                            var statusMath = (100.0 / Convert.ToDouble(ContentLength)) * Convert.ToDouble(Status);
+                                            Percentage = Convert.ToInt32(statusMath);
+                                            cacheMemoryStream.Write(buffer, 0, read);
                                             if (Percentage > 65) break;
                                         }
+                                        CacheStatus = CacheStatus.PlayReady;
                                         Slow = false;
                                     }
                                     else
                                     {
-                                        var stat = (100.0 / Convert.ToDouble(ContentLength)) * Convert.ToDouble(Status);
-                                        Percentage = Convert.ToInt32(stat);
+                                        var statusMath = (100.0 / Convert.ToDouble(ContentLength)) * Convert.ToDouble(Status);
+                                        Percentage = Convert.ToInt32(statusMath);
                                         read = thedata.Read(buffer, 0, buffer.Length);
-                                        mem.Write(buffer, 0, read);
+                                        cacheMemoryStream.Write(buffer, 0, read);
                                         Status += Convert.ToInt64(read);
                                     }
-                                    mem.Position = 0;
-                                    await mem.CopyToAsync(ffmpeg.StandardInput.BaseStream);
+                                    cacheMemoryStream.Position = 0;
+                                    await cacheMemoryStream.CopyToAsync(ffmpeg.StandardInput.BaseStream);
                                 }
                             }
                         }
@@ -121,7 +128,6 @@ namespace MikuV3.Music.Entities
                         Console.WriteLine(ex);
                     }
                 });
-                Console.WriteLine("Doing the cache thing");
                 var ffout = ffmpeg.StandardOutput.BaseStream;
                 PCMCache = new BufferedStream(ffout);
             }

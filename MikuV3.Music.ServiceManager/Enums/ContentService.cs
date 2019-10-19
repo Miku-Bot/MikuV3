@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MikuV3.Music.Enums
+﻿namespace MikuV3.Music.ServiceManager.Enums
 {
     public enum ContentService
     {

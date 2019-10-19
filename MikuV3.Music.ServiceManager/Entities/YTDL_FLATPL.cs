@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MikuV3.Music.Entities
+﻿namespace MikuV3.Music.ServiceManager.Entities
 {
     public class YTDL_FLATPL
     {

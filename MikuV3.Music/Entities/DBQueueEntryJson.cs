@@ -1,4 +1,6 @@
 ﻿using MikuV3.Music.Enums;
+using MikuV3.Music.ServiceManager.Entities;
+using MikuV3.Music.ServiceManager.Enums;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -12,18 +14,18 @@ namespace MikuV3.Music.Entities
         {
 
         }
-        public DBQueueEntryJson(ServiceResult sr)
+        public DBQueueEntryJson(ServiceResult serviceResult)
         {
-            ContentService = sr.ContentService;
-            Playlist = sr.Playlist;
-            Artist = sr.Artist;
-            ArtistUrl = sr.ArtistUrl;
-            ThumbnailUrl = sr.ThumbnailUrl;
-            UploadDate = sr.UploadDate;
-            Title = sr.Title;
-            Length = sr.Length;
-            Url = sr.Url;
-            Slow = sr.Slow;
+            ContentService = serviceResult.ContentService;
+            Playlist = serviceResult.Playlist;
+            Artist = serviceResult.Artist;
+            ArtistUrl = serviceResult.ArtistUrl;
+            ThumbnailUrl = serviceResult.ThumbnailUrl;
+            UploadDate = serviceResult.UploadDate;
+            Title = serviceResult.Title;
+            Length = serviceResult.Length;
+            Url = serviceResult.Url;
+            Slow = serviceResult.Slow;
         }
 
         [JsonProperty("ContentService")]

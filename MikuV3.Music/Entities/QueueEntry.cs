@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MikuV3.Music.ServiceManager.Entities;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,12 +7,12 @@ namespace MikuV3.Music.Entities
 {
     public class QueueEntry : Entry
     {
-        public int position { get; set; }
-        public ulong addedBy { set; get; }
-        public QueueEntry(ServiceResult sr, ulong ab, int pos) : base(sr)
+        public int Position { get; set; }
+        public ulong AddedBy { set; get; }
+        public QueueEntry(ServiceResult serviceResult, ulong addedBy, int pos) : base(serviceResult)
         {
-            position = pos;
-            addedBy = ab;
+            Position = pos;
+            AddedBy = addedBy;
         }
     }
 }

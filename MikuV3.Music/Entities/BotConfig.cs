@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using MikuV3.Music.ServiceManager.Entities;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -7,7 +8,7 @@ namespace MikuV3.Music.Entities
 {
     public class BotConfig
     {
-        public partial class Root
+        public class Root
         {
             [JsonProperty("discordToken")]
             public string DiscordToken { get; set; }
@@ -24,16 +25,16 @@ namespace MikuV3.Music.Entities
             public string DbConnectString { get; set; }
 
             [JsonProperty("dbConfig")]
-            public Config DbConfig { get; set; }
+            public DatabaseConfig DatabaseConfig { get; set; }
 
             [JsonProperty("lavaConfig")]
-            public LavaConfig LavaConfig { get; set; }
+            public LavalinkConfig LavalinkConfig { get; set; }
 
             [JsonProperty("nndConfig")]
-            public NndConfig NndConfig { get; set; }
+            public NicoNicoDougaConfig NicoNicoDougaConfig { get; set; }
         }
 
-        public partial class Config
+        public class DatabaseConfig
         {
             [JsonProperty("hostname")]
             public string Hostname { get; set; }
@@ -45,7 +46,7 @@ namespace MikuV3.Music.Entities
             public string Password { get; set; }
         }
 
-        public partial class LavaConfig
+        public class LavalinkConfig
         {
             [JsonProperty("hostname")]
             public string Hostname { get; set; }
@@ -55,18 +56,6 @@ namespace MikuV3.Music.Entities
 
             [JsonProperty("port")]
             public int Port { get; set; }
-        }
-
-        public partial class NndConfig
-        {
-            [JsonProperty("mail")]
-            public string Mail { get; set; }
-
-            [JsonProperty("password")]
-            public string Password { get; set; }
-
-            [JsonProperty("ftpConfig")]
-            public Config FtpConfig { get; set; }
         }
     }
 }

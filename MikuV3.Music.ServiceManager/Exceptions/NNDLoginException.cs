@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MikuV3.Music.Exceptions
+namespace MikuV3.Music.ServiceManager.Exceptions
 {
     public class NNDLoginException : Exception
     {

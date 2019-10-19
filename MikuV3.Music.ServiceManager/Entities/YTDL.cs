@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MikuV3.Music.Entities
+﻿namespace MikuV3.Music.ServiceManager.Entities
 {
     public class YTDL
     {
-
         public class Root
         {
             public string webpage_url { get; set; }

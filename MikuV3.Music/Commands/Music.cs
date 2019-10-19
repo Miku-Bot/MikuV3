@@ -2,21 +2,24 @@
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.VoiceNext;
 using MikuV3.Music.Entities;
-using MikuV3.Music.ServiceExtractors;
-using MikuV3.Music.Utilities;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MikuV3.Music.Commands
 {
     public class Music : BaseCommandModule
     {
+
+        //This and the constructor has to be here to make use of the dependency injection (can be left out if not needed)
+        Dictionary<ulong, MusicInstance> _mi { get; }
+
+        public Music(Dictionary<ulong, MusicInstance> mi)
+        {
+            _mi = mi;
+        }
+
         [Command("join")]
         public async Task Join(CommandContext ctx)
         {
@@ -55,13 +58,14 @@ namespace MikuV3.Music.Commands
         [Priority(1)]
         public async Task Play(CommandContext ctx, [RemainingText] string url)
         {
-            if (!Bot._mi.Any(x => x.Key == ctx.Guild.Id))
+            if (!_mi.Any(x => x.Key == ctx.Guild.Id))
             {
-                Bot._mi.Add(ctx.Guild.Id, new MusicInstance(ctx.Guild));
+                _mi.Add(ctx.Guild.Id, new MusicInstance(ctx.Guild));
             }
-            var g = Bot._mi[ctx.Guild.Id];
-            g.usedChannel = ctx.Channel;
-            if (g.vnc == null) await g.ConnectToChannel(ctx.Member.VoiceState.Channel);
+            var g = _mi[ctx.Guild.Id];
+            g.UsedChannel = ctx.Channel;
+            var vnext = ctx.Client.GetVoiceNext();
+            if (g.Vnc == null) await g.ConnectToChannel(ctx.Member.VoiceState.Channel, vnext);
             var q = await g.QueueSong(ctx, url);
             /*
             var vnext = ctx.Client.GetVoiceNext();

@@ -1,10 +1,8 @@
-﻿using MikuV3.Music.Entities;
-using System;
+﻿using MikuV3.Music.ServiceManager.Entities;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace MikuV3.Music.ServiceExtractors
+namespace MikuV3.Music.ServiceManager.ServiceExtractors
 {
     public interface IServiceExtractor
     {

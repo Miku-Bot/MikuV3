@@ -10,8 +10,8 @@ namespace MikuV3.Music
         static void Main(string[] args)
         {
             var json = File.ReadAllText(@"config.json");
-            var conf = JsonConvert.DeserializeObject<BotConfig.Root>(json);
-            using (var bot = new Bot(conf))
+            var config = JsonConvert.DeserializeObject<BotConfig.Root>(json);
+            using (var bot = new BotCore(config))
             {
                 bot.RunBot().ConfigureAwait(false).GetAwaiter().GetResult();
             }

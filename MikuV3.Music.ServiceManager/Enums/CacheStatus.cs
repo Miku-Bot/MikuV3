@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MikuV3.Music.Enums
+namespace MikuV3.Music.ServiceManager.Enums
 {
     public enum CacheStatus
     {
-        Disabled = -1,
         Rendering = 0,
-        Cached = 1
+        PlayReady = 1,
+        Cached = 2
     }
 }

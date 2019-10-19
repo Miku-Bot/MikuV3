@@ -3,7 +3,9 @@ using DSharpPlus.Entities;
 using DSharpPlus.VoiceNext;
 using MikuV3.Music.Enums;
 using MikuV3.Music.ServiceExtractors;
-using MikuV3.Music.Utilities;
+using MikuV3.Music.ServiceManager.Entities;
+using MikuV3.Music.ServiceManager.Enums;
+using MikuV3.Music.ServiceManager.ServiceExtractors;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -15,53 +17,60 @@ namespace MikuV3.Music.Entities
 {
     public class MusicInstance
     {
-        public DiscordGuild guild { get; set; }
-        public DiscordChannel usedChannel { get; set; }
-        public DiscordChannel voiceChannel { get; set; }
-        public Playstate playstate { get; set; }
-        public RepeatMode repeatMode { get; set; }
-        public int repeatAllPos { get; set; }
-        public ShuffleMode shuffleMode { get; set; }
-        public DateTime aloneTime { get; set; }
-        public CancellationTokenSource aloneCTS { get; set; }
-        public VoiceNextConnection vnc { get; set; }
-        public QueueEntry currentSong { get; set; }
-        public QueueEntry nextSong { get; set; }
-        public QueueEntry lastSong { get; set; }
+        public DiscordGuild Guild { get; set; }
+        public DiscordChannel UsedChannel { get; set; }
+        public DiscordChannel VoiceChannel { get; set; }
+        public Playstate Playstate { get; set; }
+        public RepeatMode RepeatMode { get; set; }
+        public int RepeatAllPos { get; set; }
+        public ShuffleMode ShuffleMode { get; set; }
+        public DateTime AloneTime { get; set; }
+        public CancellationTokenSource AloneCTS { get; set; }
+        public VoiceNextConnection Vnc { get; set; }
+        public QueueEntry CurrentSong { get; set; }
+        public QueueEntry NextSong { get; set; }
+        public QueueEntry LastSong { get; set; }
         public Task PlayTask { get; set; }
-        public List<QueueEntry> tempQueue = new List<QueueEntry>();
+        public List<QueueEntry> TempQueue = new List<QueueEntry>();
 
-        public MusicInstance(DiscordGuild g)
+        public MusicInstance(DiscordGuild guild)
         {
-            guild = g;
-            usedChannel = null;
-            playstate = Playstate.NotPlaying;
-            repeatMode = RepeatMode.Off;
-            repeatAllPos = 0;
-            shuffleMode = ShuffleMode.Off;
+            Guild = guild;
+            UsedChannel = null;
+            Playstate = Playstate.NotPlaying;
+            RepeatMode = RepeatMode.Off;
+            RepeatAllPos = 0;
+            ShuffleMode = ShuffleMode.Off;
         }
 
-        public async Task<bool> ConnectToChannel(DiscordChannel chn)
+        /// <summary>
+        /// Connect to a Voicechannel
+        /// </summary>
+        /// <param name="channel"></param>
+        /// <param name="voiceNext"></param>
+        /// <returns>true when successfuly connected, false if not</returns>
+        public async Task<bool> ConnectToChannel(DiscordChannel channel, VoiceNextExtension voiceNext)
         {
-            if (chn.Type == DSharpPlus.ChannelType.Voice)
+            if (channel.Type == DSharpPlus.ChannelType.Voice)
             {
-                vnc = await Bot._vnext.ConnectAsync(chn);
+                Vnc = await voiceNext.ConnectAsync(channel);
                 return true;
             }
             return false;
         }
 
-        public async Task<ServiceResult> QueueSong(CommandContext ctx, string s, int pos = -1)
+        //This will move to the Servicemanager library soon
+        public async Task<ServiceResult> QueueSong(CommandContext ctx, string songString, int pos = -1)
         {
-            var su = new ServiceUtil();
-            var gs = su.GetService(s);
+            var su = new ServiceManager.ServiceResolver(BotCore.Config.NicoNicoDougaConfig);
+            var gs = su.GetService(songString);
             ServiceResult sr = null;
             switch (gs.ContentService)
             {
                 case ContentService.Search: break;
                 case ContentService.Direct:
                     {
-                        var s1 = await new Generic().GetServiceResult(s);
+                        var s1 = await new Generic().GetServiceResult(songString);
                         sr = s1[0];
                         break;
                     }
@@ -71,7 +80,7 @@ namespace MikuV3.Music.Entities
                         {
                             case Playlist.No:
                                 {
-                                    var s1 = await new YoutubeSingle().GetServiceResult(s);
+                                    var s1 = await new YoutubeSingle().GetServiceResult(songString);
                                     sr = s1[0];
                                     break;
                                 }
@@ -94,8 +103,8 @@ namespace MikuV3.Music.Entities
                         switch (gs.Playlist)
                         {
                             case Playlist.No: {
-                                    var s1 = await new NicoNicoDougaSingle().GetServiceResult(s);
-                                    if (tempQueue.Count == 1) s1[0].FillCacheTask = Task.Run(s1[0].FillCache);
+                                    var s1 = await new NicoNicoDougaSingle().GetServiceResult(songString);
+                                    if (TempQueue.Count == 1) s1[0].FillCacheTask = Task.Run(s1[0].FillCache);
                                     sr = s1[0];
                                     break;
                                 }
@@ -109,7 +118,7 @@ namespace MikuV3.Music.Entities
                         {
                             case Playlist.No:
                                 {
-                                    var s1 = await new BilibiliSingle().GetServiceResult(s);
+                                    var s1 = await new BilibiliSingle().GetServiceResult(songString);
                                     sr = s1[0];
                                     break;
                                 }
@@ -128,9 +137,9 @@ namespace MikuV3.Music.Entities
                 var plainBytes = Encoding.UTF8.GetBytes(plainJson);
                 var encodedJson = Convert.ToBase64String(plainBytes);
                 //Database.AddToQueue(ctx.Guild, ctx.Member.Id, encodedJson);
-                tempQueue.Add(new QueueEntry(sr, ctx.Member.Id, tempQueue.Count));
-                if (tempQueue.Count == 2) nextSong = new QueueEntry(sr, ctx.Member.Id, tempQueue.Count);
-                if (vnc.Channel != null && (playstate == Playstate.NotPlaying || playstate == Playstate.Stopped)) await PlaySong(); 
+                TempQueue.Add(new QueueEntry(sr, ctx.Member.Id, TempQueue.Count));
+                if (TempQueue.Count == 2) NextSong = new QueueEntry(sr, ctx.Member.Id, TempQueue.Count);
+                if (Vnc.Channel != null && (Playstate == Playstate.NotPlaying || Playstate == Playstate.Stopped)) await PlaySong(); 
             }
             return sr;
         }
@@ -141,34 +150,34 @@ namespace MikuV3.Music.Entities
             {
                 Console.WriteLine("here");
                 await Task.Delay(0);
-                var queue = tempQueue;
-                currentSong = queue[0];
-                var cur = lastSong;
-                if (queue.Count != 1 && repeatMode == RepeatMode.All)
-                    repeatAllPos++;
-                if (repeatAllPos >= queue.Count)
-                    repeatAllPos = 0;
-                if (shuffleMode == ShuffleMode.Off)
+                var queue = TempQueue;
+                CurrentSong = queue[0];
+                var cur = LastSong;
+                if (queue.Count != 1 && RepeatMode == RepeatMode.All)
+                    RepeatAllPos++;
+                if (RepeatAllPos >= queue.Count)
+                    RepeatAllPos = 0;
+                if (ShuffleMode == ShuffleMode.Off)
                 {
                     if (queue.Count > 1)
-                        nextSong = queue[1];
+                        NextSong = queue[1];
                 }
                 else
                 {
                     if (queue.Count > 1)
-                        nextSong = queue[new Random().Next(0, queue.Count)];
+                        NextSong = queue[new Random().Next(0, queue.Count)];
                 }
-                if (repeatMode == RepeatMode.All)
+                if (RepeatMode == RepeatMode.All)
                 {
                     if (queue.Count > 1)
-                        nextSong = queue[repeatAllPos];
+                        NextSong = queue[RepeatAllPos];
                 }
-                if (repeatMode == RepeatMode.On)
+                if (RepeatMode == RepeatMode.On)
                 {
                     if (queue.Count > 1)
-                        nextSong = cur;
+                        NextSong = cur;
                 }
-                playstate = Playstate.Playing;
+                Playstate = Playstate.Playing;
                 Console.WriteLine("Task Time");
                 PlayTask = Task.Run(PlayCur);
             }
@@ -176,44 +185,38 @@ namespace MikuV3.Music.Entities
             {
                 Console.WriteLine(ex);
             }
-            return currentSong;
+            return CurrentSong;
         }
 
         public async Task PlayCur()
         {
             try
             {
-                //Console.WriteLine("Getting Stream");
-                var tx = vnc.GetTransmitStream();
-                //Console.WriteLine(currentSong.ServiceResult.Title);
-                if (currentSong.ServiceResult.Slow && currentSong.ServiceResult.CacheStatus == CacheStatus.Rendering)
+                var tx = Vnc.GetTransmitStream();
+                if (CurrentSong.ServiceResult.Slow && CurrentSong.ServiceResult.CacheStatus == CacheStatus.Rendering)
                 {
-                    //Console.WriteLine("Yes it slow");
-                    await usedChannel.SendMessageAsync("Slow service, please wait a bit while we buffer for smooth playback");
+                    await UsedChannel.SendMessageAsync("Slow service, please wait a bit while we buffer for smooth playback");
                 }
-                if (currentSong.ServiceResult.PCMCache == null && currentSong.ServiceResult.FillCacheTask == null)
+                if (CurrentSong.ServiceResult.PCMCache == null && CurrentSong.ServiceResult.FillCacheTask == null)
                 {
-                    currentSong.ServiceResult.FillCacheTask = Task.Run(currentSong.ServiceResult.FillCache);
+                    CurrentSong.ServiceResult.FillCacheTask = Task.Run(CurrentSong.ServiceResult.FillCache);
                 }
-                while (currentSong.ServiceResult.Percentage < 65 && currentSong.ServiceResult.Slow) await Task.Delay(100);
-                //Console.WriteLine("Hmmmm");
-                while (currentSong.ServiceResult.PCMCache == null)await Task.Delay(100);
-                //Console.WriteLine("stream exists");
-                var sr = currentSong.ServiceResult.PCMCache;
+                while (CurrentSong.ServiceResult.CacheStatus != CacheStatus.PlayReady && CurrentSong.ServiceResult.Slow) await Task.Delay(100);
+                while (CurrentSong.ServiceResult.PCMCache == null)await Task.Delay(100);
+                var currentPCMCachr = CurrentSong.ServiceResult.PCMCache;
                 int read;
                 byte[] buffer = new byte[3840];
-                //Console.WriteLine("Write time");
-                while ((read = sr.Read(buffer, 0, buffer.Length)) > 0)
+                while ((read = currentPCMCachr.Read(buffer, 0, buffer.Length)) > 0)
                 {
                     tx.Write(buffer, 0, read);
                 }
                 await tx.FlushAsync();
-                await vnc.WaitForPlaybackFinishAsync();
-                tempQueue.RemoveAt(0);
-                playstate = Playstate.NotPlaying;
-                lastSong = currentSong;
-                currentSong = nextSong;
-                if (tempQueue.Count != 0)await PlaySong();
+                await Vnc.WaitForPlaybackFinishAsync();
+                TempQueue.RemoveAt(0);
+                Playstate = Playstate.NotPlaying;
+                LastSong = CurrentSong;
+                CurrentSong = NextSong;
+                if (TempQueue.Count != 0)await PlaySong();
             }
             catch (Exception ex)
             {

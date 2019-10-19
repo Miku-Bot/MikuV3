@@ -1,18 +1,26 @@
-﻿using MikuV3.Music.Entities;
-using MikuV3.Music.Enums;
-using Newtonsoft.Json;
-using NYoutubeDL;
+﻿using MikuV3.Music.ServiceManager.Entities;
+using MikuV3.Music.ServiceManager.Enums;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
-namespace MikuV3.Music.Utilities
+namespace MikuV3.Music.ServiceManager
 {
-    public class ServiceUtil
+    public class ServiceResolver
     {
+        public static NicoNicoDougaConfig NicoNicoDougaConfig { get; private set; }
+
+        public ServiceResolver(NicoNicoDougaConfig nicoNicoDougaConfig)
+        {
+            NicoNicoDougaConfig = nicoNicoDougaConfig;
+        }
+
+        /// <summary>
+        /// Get the service (and wether or not its a playlist) 
+        /// - if the URL is invalit it will return "Search"
+        /// - if the serive is unknown/not implemented it will default to "direct"
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
         public ContentServiceMatch GetService(string url)
         {
             //URL Check
@@ -72,6 +80,8 @@ namespace MikuV3.Music.Utilities
 
             return new ContentServiceMatch(ContentService.Direct, Playlist.No);
         }
+
+        #region Regex's
         //used from youtube-dl
 
         //Youtube
@@ -117,5 +127,6 @@ namespace MikuV3.Music.Utilities
         //Mixer
         private readonly string MIXER = "https?://(?:[0-9A-Za-z_]+\\.)?(?:beam\\.pro|mixer\\.com)/(?<id>[^/?#&]+)";
         private readonly string MIXER_VOD = "https?://(?:[0-9A-Za-z_]+\\.)?(?:beam\\.pro|mixer\\.com)/[^/?#&]+\\?.*?\\bvod=(?<id>[^?#&]+)";
+        #endregion
     }
 }

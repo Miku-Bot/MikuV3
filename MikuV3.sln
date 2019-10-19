@@ -12,6 +12,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DSharpPlus.Interactivity", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DSharpPlus.VoiceNext", "DSharpPlus\DSharpPlus.VoiceNext\DSharpPlus.VoiceNext.csproj", "{D3FAB44B-DE64-49A5-B15D-5021B77CEEAE}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MikuV3.Test", "MikuV3.Test\MikuV3.Test.csproj", "{4185CE6B-587E-4D04-A74E-E448EE257EA5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MikuV3.Music.ServiceManager", "MikuV3.Music.ServiceManager\MikuV3.Music.ServiceManager.csproj", "{97CB58A9-BCE3-4A93-AF7E-C7AE4B436C45}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +42,14 @@ Global
 		{D3FAB44B-DE64-49A5-B15D-5021B77CEEAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3FAB44B-DE64-49A5-B15D-5021B77CEEAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D3FAB44B-DE64-49A5-B15D-5021B77CEEAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4185CE6B-587E-4D04-A74E-E448EE257EA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4185CE6B-587E-4D04-A74E-E448EE257EA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4185CE6B-587E-4D04-A74E-E448EE257EA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4185CE6B-587E-4D04-A74E-E448EE257EA5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97CB58A9-BCE3-4A93-AF7E-C7AE4B436C45}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97CB58A9-BCE3-4A93-AF7E-C7AE4B436C45}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97CB58A9-BCE3-4A93-AF7E-C7AE4B436C45}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97CB58A9-BCE3-4A93-AF7E-C7AE4B436C45}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="0.13.0" />
+    <PackageReference Include="AngleSharp" Version="0.14.0-alpha-784" />
     <PackageReference Include="NYoutubeDL" Version="0.10.8" />
     <PackageReference Include="YoutubeExplode" Version="4.7.10" />
   </ItemGroup>
@@ -16,6 +16,7 @@
     <ProjectReference Include="..\DSharpPlus\DSharpPlus.Interactivity\DSharpPlus.Interactivity.csproj" />
     <ProjectReference Include="..\DSharpPlus\DSharpPlus.VoiceNext\DSharpPlus.VoiceNext.csproj" />
     <ProjectReference Include="..\DSharpPlus\DSharpPlus\DSharpPlus.csproj" />
+    <ProjectReference Include="..\MikuV3.Music.ServiceManager\MikuV3.Music.ServiceManager.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,10 +32,6 @@
     <None Update="youtube-dl.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Structs\" />
   </ItemGroup>
 
 </Project>
