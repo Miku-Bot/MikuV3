@@ -3,14 +3,13 @@ using DSharpPlus.CommandsNext;
 using DSharpPlus.Interactivity;
 using DSharpPlus.VoiceNext;
 using Microsoft.Extensions.DependencyInjection;
-using MikuV3.Music.Entities;
+using MikuV3.Core.Entities;
 using MikuV3.Music.Extensions;
 using MikuV3.Music.ServiceManager;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace MikuV3.Music
+namespace MikuV3.Core
 {
     public sealed class BotCore : IDisposable
     {
@@ -47,8 +46,8 @@ namespace MikuV3.Music
                 Services = serviceProvider,
                 StringPrefixes = new[] { "b!" }
             });
-            _cnext.RegisterCommands<Commands.Debug>();
-            _cnext.RegisterCommands<Commands.Music>();
+            _cnext.RegisterCommands<Music.Commands.Debug>();
+            _cnext.RegisterCommands<Music.Commands.Music>();
 
             _vnext = _c.UseVoiceNext();
             _me = _c.UseMusic();

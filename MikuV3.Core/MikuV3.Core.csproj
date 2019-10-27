@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00633" />
+    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00633" />
+    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00633" />
+    <PackageReference Include="DSharpPlus.VoiceNext" Version="4.0.0-nightly-00633" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MikuV3.Database\MikuV3.Music.Database.csproj" />
+    <ProjectReference Include="..\MikuV3.Music.ServiceManager\MikuV3.Music.ServiceManager.csproj" />
+    <ProjectReference Include="..\MikuV3.Music\MikuV3.Music.csproj" />
+  </ItemGroup>
+
+</Project>

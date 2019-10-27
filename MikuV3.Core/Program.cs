@@ -1,9 +1,9 @@
-﻿using MikuV3.Music.Entities;
+﻿using MikuV3.Core.Entities;
 using Newtonsoft.Json;
 using System;
 using System.IO;
 
-namespace MikuV3.Music
+namespace MikuV3.Core
 {
     class Program
     {
