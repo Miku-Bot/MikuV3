@@ -1,17 +1,103 @@
 ﻿using MikuV3.Music.ServiceManager.Entities;
 using MikuV3.Music.ServiceManager.Enums;
+using MikuV3.Music.ServiceManager.ServiceExtractors;
 using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace MikuV3.Music.ServiceManager
 {
-    public class ServiceResolver
+    public class ServiceResolver : IServiceResolver
     {
         public static NicoNicoDougaConfig NicoNicoDougaConfig { get; private set; }
 
-        public ServiceResolver(NicoNicoDougaConfig nicoNicoDougaConfig)
+        public ServiceResolver()
         {
-            NicoNicoDougaConfig = nicoNicoDougaConfig;
+            NicoNicoDougaConfig = new NicoNicoDougaConfig {
+            Mail = "",
+            Password = ""
+            };
+        }
+
+        /// <summary>
+        /// Get A List of ServiceResults from the input URL
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name=""></param>
+        /// <returns></returns>
+        public async Task<List<ServiceResult>> GetServiceResults(string UrlOrSearchterm, ContentServiceMatch contentServiceMatch)
+        {
+            switch (contentServiceMatch.ContentService)
+            {
+                case ContentService.Direct:
+                    {
+                        using (var g = new Generic())
+                        {
+                            return await g.GetServiceResult(UrlOrSearchterm);
+                        }
+                    }
+                case ContentService.Youtube:
+                    {
+                        switch (contentServiceMatch.Playlist)
+                        {
+                            case Playlist.Search: break; //not implemented
+                            case Playlist.Yes: break; //not implemented -- Should return the playlist and the selected song at position 1
+                            case Playlist.No:
+                                {
+                                    using (var g = new YoutubeSingle())
+                                    {
+                                        return await g.GetServiceResult(UrlOrSearchterm);
+                                    }
+                                }
+                            case Playlist.Only: break; //not implemented -- Should return the playlist, only the playlist
+                        }
+                        break;
+                    }
+                case ContentService.Soundcloud:
+                    {
+                        switch (contentServiceMatch.Playlist)
+                        {
+                            case Playlist.Search: break; //not implemented
+                            case Playlist.No: break; // not implemented
+                            case Playlist.Only: break; //not implemented
+                        }
+                        break;
+                    }
+                case ContentService.NicoNicoDouga:
+                    {
+                        switch (contentServiceMatch.Playlist)
+                        {
+                            case Playlist.Search: break; //not implemented
+                            case Playlist.No:
+                                {
+                                    using (var g = new NicoNicoDougaSingle())
+                                    {
+                                        return await g.GetServiceResult(UrlOrSearchterm);
+                                    }
+                                }
+                            case Playlist.Only: break; //not implemented
+                        }
+                        break;
+                    }
+                case ContentService.BiliBili:
+                    {
+                        switch (contentServiceMatch.Playlist)
+                        {
+                            case Playlist.Search: break; //not implemtented
+                            case Playlist.No:
+                                {
+                                    using (var g = new BilibiliSingle())
+                                    {
+                                        return await g.GetServiceResult(UrlOrSearchterm);
+                                    }
+                                }
+                            case Playlist.Only: break; //not implemented
+                        }
+                        break;
+                    }
+            }
+            return null;
         }
 
         /// <summary>
@@ -25,7 +111,7 @@ namespace MikuV3.Music.ServiceManager
         {
             //URL Check
             try { new Uri(url); }
-            catch { return new ContentServiceMatch(ContentService.Search, Playlist.No); }
+            catch { return new ContentServiceMatch(ContentService.None, Playlist.Search); }
 
             //Youtube Single
             if ((Regex.IsMatch(url, YT) && !Regex.IsMatch(url, YT_PL))

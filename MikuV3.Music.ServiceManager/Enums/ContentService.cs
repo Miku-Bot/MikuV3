@@ -2,7 +2,7 @@
 {
     public enum ContentService
     {
-        Search = -1,
+        None = -1,
         Direct = 0,
         Youtube = 1,
         Soundcloud = 2,

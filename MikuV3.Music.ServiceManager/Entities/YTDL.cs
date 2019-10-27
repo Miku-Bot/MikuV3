@@ -37,7 +37,7 @@
             public object vbr { get; set; }
             public object series { get; set; }
             public object playlist_index { get; set; }
-            public int? abr { get; set; }
+            public double? abr { get; set; }
             public int width { get; set; }
             public object track { get; set; }
             public object episode_number { get; set; }
@@ -74,7 +74,7 @@
             public int asr { get; set; }
             public int playlist_index { get; set; }
             public string display_id { get; set; }
-            public int? abr { get; set; }
+            public double? abr { get; set; }
             public string thumbnail { get; set; }
             public object track { get; set; }
             public string acodec { get; set; }
@@ -177,7 +177,7 @@
             public string format { get; set; }
             public string format_note { get; set; }
             public float? tbr { get; set; }
-            public int? abr { get; set; }
+            public double? abr { get; set; }
             public float? fps { get; set; }
             public string ext { get; set; }
             public int? asr { get; set; }

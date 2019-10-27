@@ -4,6 +4,7 @@ using DSharpPlus.Interactivity;
 using DSharpPlus.VoiceNext;
 using Microsoft.Extensions.DependencyInjection;
 using MikuV3.Music.Entities;
+using MikuV3.Music.Extensions;
 using MikuV3.Music.ServiceManager;
 using System;
 using System.Collections.Generic;
@@ -18,6 +19,7 @@ namespace MikuV3.Music
         static CommandsNextExtension _cnext { get; set; }
         static InteractivityExtension _inext { get; set; }
         static VoiceNextExtension _vnext { get; set; }
+        static MusicExtension _me { get; set; }
 
         public BotCore(BotConfig.Root botConfig)
         {
@@ -36,8 +38,7 @@ namespace MikuV3.Music
             //Singleton will be the same in every commandclass
             //For the others it dosent, use Transient for DB stuff in the future
             var serviceProvider = new ServiceCollection()
-            .AddSingleton(new ServiceResolver(Config.NicoNicoDougaConfig))
-            .AddSingleton(new Dictionary<ulong, MusicInstance>())
+            .AddTransient<ServiceResolver>()
             .BuildServiceProvider();
 
             _cnext = _c.UseCommandsNext(new CommandsNextConfiguration
@@ -47,6 +48,16 @@ namespace MikuV3.Music
                 StringPrefixes = new[] { "b!" }
             });
             _cnext.RegisterCommands<Commands.Debug>();
+            _cnext.RegisterCommands<Commands.Music>();
+
+            _vnext = _c.UseVoiceNext();
+            _me = _c.UseMusic();
+
+            _cnext.CommandErrored += e =>
+            {
+                Console.WriteLine(e.Exception);
+                return Task.CompletedTask;
+            };
         }
 
         public async Task RunBot()

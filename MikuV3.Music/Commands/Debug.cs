@@ -16,12 +16,10 @@ namespace MikuV3.Music.Commands
 
         //This and the constructor has to be here to make use of the dependency injection (can be left out if not needed)
         public ServiceResolver ServiceResolver { get; }
-        public Dictionary<ulong, MusicInstance> Instances { get; set; }
 
-        public Debug(ServiceResolver serviceResolver, Dictionary<ulong, MusicInstance> instances)
+        public Debug(ServiceResolver serviceResolver)
         {
             ServiceResolver = serviceResolver;
-            Instances = instances;
         }
 
         [Command("gs")]
@@ -32,13 +30,6 @@ namespace MikuV3.Music.Commands
             var it = ServiceResolver.GetService(n);
             sw.Stop();
             await ctx.RespondAsync(it.ContentService + " " + it.Playlist + Environment.NewLine + sw.Elapsed.TotalSeconds);
-        }
-
-        [Command("ls")]
-        public async Task ListTest(CommandContext ctx, string s)
-        {
-            Instances.Add(ctx.Guild.Id, null);
-            await ctx.RespondAsync(JsonConvert.SerializeObject(Instances, Formatting.Indented));
         }
     }
 }

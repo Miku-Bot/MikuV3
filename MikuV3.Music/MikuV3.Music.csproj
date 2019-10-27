@@ -7,15 +7,16 @@
 
   <ItemGroup>
     <PackageReference Include="AngleSharp" Version="0.14.0-alpha-784" />
+    <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00633" />
+    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00633" />
+    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00633" />
+    <PackageReference Include="DSharpPlus.VoiceNext" Version="4.0.0-nightly-00633" />
     <PackageReference Include="NYoutubeDL" Version="0.10.8" />
     <PackageReference Include="YoutubeExplode" Version="4.7.10" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DSharpPlus\DSharpPlus.CommandsNext\DSharpPlus.CommandsNext.csproj" />
-    <ProjectReference Include="..\DSharpPlus\DSharpPlus.Interactivity\DSharpPlus.Interactivity.csproj" />
-    <ProjectReference Include="..\DSharpPlus\DSharpPlus.VoiceNext\DSharpPlus.VoiceNext.csproj" />
-    <ProjectReference Include="..\DSharpPlus\DSharpPlus\DSharpPlus.csproj" />
+    <ProjectReference Include="..\MikuV3.Database\MikuV3.Music.Database.csproj" />
     <ProjectReference Include="..\MikuV3.Music.ServiceManager\MikuV3.Music.ServiceManager.csproj" />
   </ItemGroup>
 

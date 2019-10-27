@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -7,10 +8,10 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using AngleSharp.Html.Parser;
-using MikuV3.Music.ServiceExtractors;
-using MikuV3.Music.ServiceExtractors.ServiceEntities;
 using MikuV3.Music.ServiceManager.Entities;
+using MikuV3.Music.ServiceManager.Enums;
 using MikuV3.Music.ServiceManager.Exceptions;
+using MikuV3.Music.ServiceManager.Helpers;
 using Newtonsoft.Json;
 
 namespace MikuV3.Music.ServiceManager.ServiceExtractors
@@ -19,16 +20,10 @@ namespace MikuV3.Music.ServiceManager.ServiceExtractors
     {
         HttpClientHandler handler { get; set; }
         HttpClient _c { get; set; }
-        NNDHTML.Root htmls5Json { get; set; }
-        NNDFlash.Root flashJson { get; set; }
-        string artist { get; set; }
-        string artistUrl { get; set; }
-        string thumbnailUrl { get; set; }
-        DateTime uploadDate { get; set; } 
-        string title { get; set; }
-        TimeSpan length { get; set; }
-        List<string> directUrls { get; set; }
+        YTDL.Root ytDlResult { get; set; }
         string url { get; set; }
+        Task LoginTask { get; set; }
+        Task UriTask { get; set; }
 
         public NicoNicoDougaSingle()
         {
@@ -41,7 +36,6 @@ namespace MikuV3.Music.ServiceManager.ServiceExtractors
                 UseDefaultCredentials = false
             };
             _c = new HttpClient(handler);
-            directUrls = new List<string>();
         }
 
         /// <summary>
@@ -51,82 +45,107 @@ namespace MikuV3.Music.ServiceManager.ServiceExtractors
         /// <returns></returns>
         public async Task<List<ServiceResult>> GetServiceResult(string url)
         {
-            var login = await DoLogin();
-            if (!login.IsSuccessStatusCode) throw new NNDLoginException(login.ReasonPhrase);
-            var getDirectUrl = await GetDirectUri(url);
-            if (getDirectUrl == null)return null;
-            var serviceResults = new List<ServiceResult>();
-            serviceResults.Add(new ServiceResult(Enums.ContentService.NicoNicoDouga,
-                Enums.Playlist.No,
+            this.url = url;
+            LoginTask = Task.Run(DoLogin);
+            UriTask = Task.Run(GetDirectUri);
+            await Task.WhenAll(LoginTask, UriTask);
+            var serviceResult = new List<ServiceResult>();
+            var bestVids = ytDlResult.formats.OrderByDescending(x => x.abr);
+            var bestVids2 = bestVids.Where(x => x.abr == bestVids.First().abr);
+            var bestAudio = bestVids2.OrderBy(x => x.height).First();
+            var urls = new List<string>();
+            if (bestAudio.fragments?.Count() != 0 && bestAudio.fragments != null)
+            {
+                foreach (var fragments in bestAudio.fragments)
+                {
+                    urls.Add($"{bestAudio.fragment_base_url}{fragments.path}");
+                }
+            }
+            else
+            {
+                urls.Add(bestAudio.url);
+            }
+            serviceResult.Add(new ServiceResult(ContentService.Youtube,
+                Playlist.No,
                 _c,
-                length,
-                directUrls,
-                this.url,
-                uploadDate,
-                artist,
-                artistUrl,
-                title,
-                thumbnailUrl,
-                true));
-            return serviceResults;
+                TimeSpan.FromSeconds(ytDlResult.duration),
+                urls,
+                url,
+                TimeConversion.ParseYTDLDate(ytDlResult.upload_date),
+                ytDlResult.uploader,
+                ytDlResult.uploader_url,
+                ytDlResult.title,
+                ytDlResult.thumbnail, true));
+            return serviceResult;
         }
 
         /// <summary>
         /// Log into NND with the supplied mail and password
         /// </summary>
         /// <returns></returns>
-        public async Task<HttpResponseMessage> DoLogin()
+        private async Task DoLogin()
         {
             string loginForm = $"mail={ServiceResolver.NicoNicoDougaConfig.Mail}&password={ServiceResolver.NicoNicoDougaConfig.Password}&site=nicometro";
             var body = new StringContent(loginForm, Encoding.UTF8, "application/x-www-form-urlencoded");
             string login = "https://secure.nicovideo.jp/secure/login?site=niconico";
             body.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
             var doLogin = await _c.PostAsync(new Uri(login), body);
-            return doLogin;
         }
 
         /// <summary>
         /// Gets the direct URL (and also sets the metadata)
         /// </summary>
-        /// <param name="url"></param>
         /// <returns></returns>
-        public async Task<string> GetDirectUri(string url)
+        private async Task GetDirectUri()
         {
             var split = url.Split("/".ToCharArray());
             var nndID = split.First(x => x.StartsWith("sm") || x.StartsWith("nm")).Split("?")[0];
-            var videoPage = await _c.GetStringAsync(new Uri($"https://www.nicovideo.jp/watch/{nndID}"));
-            var parser = new HtmlParser();
-            var parsedDoc = await parser.ParseDocumentAsync(videoPage);
-            var html5Part = parsedDoc.GetElementById("js-initial-watch-data");
-            if (html5Part != null)
-                htmls5Json = JsonConvert.DeserializeObject<NNDHTML.Root>(html5Part.GetAttribute("data-api-data"));
-            else
-                flashJson = JsonConvert.DeserializeObject<NNDFlash.Root>(parsedDoc.GetElementById("watchAPIDataContainer").TextContent);
-            this.url = $"https://www.nicovideo.jp/watch/{nndID}";
-            if (flashJson == null)
+            var psi = new ProcessStartInfo()
             {
-                title = htmls5Json.video.originalTitle;
-                artist = htmls5Json.owner?.nickname == null ? "n/a" : htmls5Json.owner.nickname;
-                artistUrl = "https://www.nicovideo.jp/user/" + (htmls5Json.owner?.id == null ? "n/a" : htmls5Json.owner.id);
-                thumbnailUrl = htmls5Json.video.largeThumbnailURL == null ? htmls5Json.video.thumbnailURL : htmls5Json.video.largeThumbnailURL;
-                uploadDate = DateTime.Parse(htmls5Json.video.postedDateTime);
-                length = TimeSpan.FromSeconds((int)htmls5Json.video.duration);
-                directUrls.Add(htmls5Json.video.smileInfo.url);
-                return htmls5Json.video.smileInfo.url;
-            }
-            else 
+                FileName = @"youtube-dl.exe",
+                Arguments = $"-i --no-warnings -J --no-playlist -u {ServiceResolver.NicoNicoDougaConfig.Mail} -p {ServiceResolver.NicoNicoDougaConfig.Password} \"https://www.nicovideo.jp/watch/{nndID}\"",
+                RedirectStandardOutput = true,
+                UseShellExecute = false
+            };
+            var ytDlprocess = Process.Start(psi);
+            var ytDlJson = await ytDlprocess.StandardOutput.ReadToEndAsync();
+            ytDlprocess.Dispose();
+            ytDlResult = JsonConvert.DeserializeObject<YTDL.Root>(ytDlJson);
+        }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
             {
-                var directVideoUri = flashJson.flashvars.flvInfo.Replace("%253A%252F%252F", "://").Replace("%252F", "/").Replace("%253F", "?").Replace("%253D", "=").Split("%3D").First(x => x.StartsWith("http")).Split("%26")[0];
-                title = flashJson.videoDetail.title_original;
-                artist = flashJson.uploaderInfo?.nickname == null ? "n/a" : flashJson.uploaderInfo.nickname;
-                artistUrl = "https://www.nicovideo.jp/user/" + (flashJson.uploaderInfo?.id == null ? "n/a" : flashJson.uploaderInfo.id);
-                thumbnailUrl = flashJson.videoDetail.large_thumbnail == null ? flashJson.videoDetail.thumbnail : flashJson.videoDetail.large_thumbnail;
-                Console.WriteLine(flashJson.videoDetail.postedAt);
-                uploadDate = DateTime.Parse(flashJson.videoDetail.postedAt);
-                length = TimeSpan.FromSeconds(flashJson.videoDetail.length);
-                directUrls.Add(directVideoUri);
-                return directVideoUri;
+                if (disposing)
+                {
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                disposedValue = true;
             }
         }
+
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~NicoNicoDougaSingle()
+        // {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }
