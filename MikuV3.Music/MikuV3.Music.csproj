@@ -13,6 +13,9 @@
     <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00633" />
     <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00633" />
     <PackageReference Include="DSharpPlus.VoiceNext" Version="4.0.0-nightly-00633" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.4.0-beta2-final" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.4.0-beta2-final" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="3.4.0-beta2-final" />
     <PackageReference Include="NYoutubeDL" Version="0.10.8" />
     <PackageReference Include="YoutubeExplode" Version="4.7.10" />
   </ItemGroup>

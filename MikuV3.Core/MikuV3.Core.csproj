@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
+    <StartupObject>MikuV3.Core.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +18,15 @@
     <ProjectReference Include="..\MikuV3.Database\MikuV3.Music.Database.csproj" />
     <ProjectReference Include="..\MikuV3.Music.ServiceManager\MikuV3.Music.ServiceManager.csproj" />
     <ProjectReference Include="..\MikuV3.Music\MikuV3.Music.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="config.example.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

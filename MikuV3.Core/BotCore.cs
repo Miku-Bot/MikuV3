@@ -46,7 +46,7 @@ namespace MikuV3.Core
                 Services = serviceProvider,
                 StringPrefixes = new[] { "b!" }
             });
-            _cnext.RegisterCommands<Music.Commands.Debug>();
+            _cnext.RegisterCommands<Commands.Debug>();
             _cnext.RegisterCommands<Music.Commands.Music>();
 
             _vnext = _c.UseVoiceNext();

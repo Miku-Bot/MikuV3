@@ -96,26 +96,18 @@ namespace MikuV3.Music.Entities
                     RepeatAllPos++;
                 if (RepeatAllPos >= queue.Count)
                     RepeatAllPos = 0;
-                if (ShuffleMode == ShuffleMode.Off)
-                {
-                    if (queue.Count > 1)
-                        NextSong = queue[1];
-                    
-                }
+                if (ShuffleMode == ShuffleMode.Off && queue.Count > 1)
+                    NextSong = queue[1];
                 else
-                {
                     if (queue.Count > 1)
-                        NextSong = queue[new Random().Next(0, queue.Count)];
+                    NextSong = queue[new Random().Next(0, queue.Count)];
+                if (RepeatMode == RepeatMode.All && queue.Count > 1)
+                {
+                    NextSong = queue[RepeatAllPos];
                 }
-                if (RepeatMode == RepeatMode.All)
+                if (RepeatMode == RepeatMode.On && queue.Count > 1)
                 {
-                    if (queue.Count > 1)
-                        NextSong = queue[RepeatAllPos];
-                }
-                if (RepeatMode == RepeatMode.On)
-                {
-                    if (queue.Count > 1)
-                        NextSong = cur;
+                    NextSong = cur;
                 }
                 if (NextSong?.ServiceResult.Slow == true){
                     NextSong.ServiceResult.StartCaching();
@@ -135,38 +127,54 @@ namespace MikuV3.Music.Entities
             try
             {
                 var tx = Vnc.GetTransmitStream();
+                //If the next songs is from a slow Service, it sends an alert that the buffering isnt ready yet
                 if (CurrentSong.ServiceResult.Slow && CurrentSong.ServiceResult.CacheStatus == CacheStatus.Rendering)
                 {
                     await UsedChannel.SendMessageAsync("Slow service, please wait a bit while we buffer for smooth playback");
                 }
+                //Start caching if it wasnt already
                 if (CurrentSong.ServiceResult.PCMQueue == null && CurrentSong.ServiceResult.FillCacheTask == null)
                 {
                     CurrentSong.ServiceResult.StartCaching();
                 }
+                //Wait until the the slow Serice is ready to Play (PlayReady wau)
                 while (CurrentSong.ServiceResult.CacheStatus != CacheStatus.PlayReady && CurrentSong.ServiceResult.Slow) await Task.Delay(100);
+                //More of a non slow thing, wait until there is actually something cached
                 while (CurrentSong.ServiceResult.PCMQueue == null)await Task.Delay(100);
                 var currentPCMCache = CurrentSong.ServiceResult.PCMQueue;
+                //The main fun
                 while (CurrentSong.ServiceResult.CacheStatus != CacheStatus.Cached || currentPCMCache.Count > 0)
                 {
+                    //See if there is a packet ready (just see, not take)
                     var hasPacket = currentPCMCache.TryPeek(out var none);
+                    //If its paused OR THE PACKET QUEUE INTERNALLY OF DSHARPPLUS or there is no packet ready, we skip a cycle
                     if (!hasPacket || GetPacketQueueCount() > 50 || Playstate == Playstate.Paused)
                         continue;
+                    //actually take the first packet now
                     currentPCMCache.TryDequeue(out var packet);
+                    //This is to see how far we have advanced into the song yet
                     if (!CurrentSong.ServiceResult.CurrentPosition.IsRunning) CurrentSong.ServiceResult.CurrentPosition.Start();
-                    await packet.CopyToAsync(tx, 3840);
+                    //Write to the VoiceStream, try/catch cause sometimes it can oof, then its better to skip a bit than fail as a whole
+                    try
+                    {
+                        await packet.CopyToAsync(tx, 3840);
+                    }
+                    catch { Console.WriteLine("wau"); }
                     await packet.DisposeAsync();
                     
                 }
+                //Get rid of stuff and pause
                 CurrentSong.ServiceResult.Dispose();
                 CurrentSong.ServiceResult.CurrentPosition.Stop();
-                Console.WriteLine(CurrentSong.ServiceResult.Length.TotalSeconds);
-                Console.WriteLine(CurrentSong.ServiceResult.CurrentPosition.Elapsed.TotalSeconds +1);
+                //Clear everything
                 await tx.FlushAsync();
                 await Vnc.WaitForPlaybackFinishAsync();
-                TempQueue.RemoveAt(0);
+                //Logic here to not delete the first song but the one that was played, this might be not the right way
+                TempQueue.Remove(CurrentSong);
                 Playstate = Playstate.NotPlaying;
                 LastSong = CurrentSong;
                 CurrentSong = NextSong;
+                //If there#s still songs in queue, start the playing process again
                 if (TempQueue.Count != 0)await PlaySong();
             }
             catch (Exception ex)

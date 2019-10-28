@@ -26,6 +26,9 @@ namespace MikuV3.Music.ServiceManager.Entities
         List<string> DirectUrls { get; }
         public string Url { get;}
         public Task FillCacheTask { get; private set; }
+        Task InputTask { get; set; }
+        Task OutputTask { get; set; }
+        Process FFMPEG { get; set; }
         public bool Slow { get; set; }
         long ContentLength = 0;
         long Status = 0;
@@ -91,92 +94,97 @@ namespace MikuV3.Music.ServiceManager.Entities
                     RedirectStandardInput = true,
                     UseShellExecute = false
                 };
-                var ffmpeg = Process.Start(psi2);
-                var inputTask = Task.Run(async () =>
-                {
-                    try
-                    {
-                        foreach (var part in DirectUrls)
-                        {
-                            var Response = await _c.GetAsync(part, HttpCompletionOption.ResponseHeadersRead);
-                            ContentLength += (long)Response.Content.Headers.ContentLength;
-                        }
-                        foreach (var part in DirectUrls)
-                        {
-                            var Response = await _c.GetAsync(part, HttpCompletionOption.ResponseHeadersRead);
-                            try
-                            {
-                                using (var thedata = await Response.Content.ReadAsStreamAsync())
-                                {
-                                    int read = -1;
-                                    while (read != 0)
-                                    {
-                                        var cacheMemoryStream = new MemoryStream();
-                                        byte[] buffer = new byte[3840];
-                                        if (Slow)
-                                        {
-                                            while (((read = thedata.Read(buffer, 0, buffer.Length)) > 0))
-                                            {
-                                                Status += Convert.ToInt64(read);
-                                                var statusMath = (100.0 / Convert.ToDouble(ContentLength)) * Convert.ToDouble(Status);
-                                                Percentage = Convert.ToInt32(statusMath);
-                                                cacheMemoryStream.Write(buffer, 0, read);
-                                                if (Percentage > 65) break;
-                                            }
-                                            CacheStatus = CacheStatus.PlayReady;
-                                            Slow = false;
-                                        }
-                                        else
-                                        {
-                                            var statusMath = (100.0 / Convert.ToDouble(ContentLength)) * Convert.ToDouble(Status);
-                                            Percentage = Convert.ToInt32(statusMath);
-                                            read = thedata.Read(buffer, 0, buffer.Length);
-                                            cacheMemoryStream.Write(buffer, 0, read);
-                                            Status += Convert.ToInt64(read);
-                                        }
-                                        cacheMemoryStream.Position = 0;
-                                        await cacheMemoryStream.CopyToAsync(ffmpeg.StandardInput.BaseStream, 3840);
-                                    }
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine(ex);
-                            }
-                        }
-                        ffmpeg.StandardInput.Close();
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                    }
-                });
-                var outputTask = Task.Run(async () => {
-                    await Task.Delay(0);
-                    var ms = new MemoryStream();
-                    PCMQueue = new ConcurrentQueue<Stream>();
-                    var ffout = ffmpeg.StandardOutput.BaseStream;
-                    int read;
-                    byte[] buffer = new byte[3840];
-                    while ((read = ffout.Read(buffer, 0, buffer.Length)) > 0)
-                    {
-                        ms.Write(buffer, 0, read);
-                        ms.Position = 0;
-                        PCMQueue.Enqueue(ms);
-                        //ms.Dispose();
-                        ms = new MemoryStream();
-                        //Console.WriteLine(PCMQueue.Count);
-                    }
-                    ffmpeg.StandardOutput.Close();
-                    Percentage = 100;
-                    ffmpeg.Dispose();
-                    CacheStatus = CacheStatus.Cached;
-                });
+                FFMPEG = Process.Start(psi2);
+                InputTask = Task.Run(WriteToFFMPEG);
+                OutputTask = Task.Run(WriteToQueue);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
             }
+        }
+
+        private async Task WriteToFFMPEG()
+        {
+            try
+            {
+                foreach (var part in DirectUrls)
+                {
+                    var Response = await _c.GetAsync(part, HttpCompletionOption.ResponseHeadersRead);
+                    ContentLength += (long)Response.Content.Headers.ContentLength;
+                }
+                foreach (var part in DirectUrls)
+                {
+                    var Response = await _c.GetAsync(part, HttpCompletionOption.ResponseHeadersRead);
+                    try
+                    {
+                        using (var thedata = await Response.Content.ReadAsStreamAsync())
+                        {
+                            int read = -1;
+                            while (read != 0)
+                            {
+                                var cacheMemoryStream = new MemoryStream();
+                                byte[] buffer = new byte[3840];
+                                if (Slow)
+                                {
+                                    while (((read = thedata.Read(buffer, 0, buffer.Length)) > 0))
+                                    {
+                                        Status += Convert.ToInt64(read);
+                                        var statusMath = (100.0 / Convert.ToDouble(ContentLength)) * Convert.ToDouble(Status);
+                                        Percentage = Convert.ToInt32(statusMath);
+                                        cacheMemoryStream.Write(buffer, 0, read);
+                                        if (Percentage > 65) break;
+                                    }
+                                    CacheStatus = CacheStatus.PlayReady;
+                                    Slow = false;
+                                }
+                                else
+                                {
+                                    var statusMath = (100.0 / Convert.ToDouble(ContentLength)) * Convert.ToDouble(Status);
+                                    Percentage = Convert.ToInt32(statusMath);
+                                    read = thedata.Read(buffer, 0, buffer.Length);
+                                    cacheMemoryStream.Write(buffer, 0, read);
+                                    Status += Convert.ToInt64(read);
+                                }
+                                cacheMemoryStream.Position = 0;
+                                await cacheMemoryStream.CopyToAsync(FFMPEG.StandardInput.BaseStream, 3840);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                    }
+                }
+                FFMPEG.StandardInput.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+
+        private async Task WriteToQueue()
+        {
+            await Task.Delay(0);
+            var ms = new MemoryStream();
+            PCMQueue = new ConcurrentQueue<Stream>();
+            var ffout = FFMPEG.StandardOutput.BaseStream;
+            int read;
+            byte[] buffer = new byte[3840];
+            while ((read = ffout.Read(buffer, 0, buffer.Length)) > 0)
+            {
+                ms.Write(buffer, 0, read);
+                ms.Position = 0;
+                PCMQueue.Enqueue(ms);
+                //ms.Dispose();
+                ms = new MemoryStream();
+                //Console.WriteLine(PCMQueue.Count);
+            }
+            FFMPEG.StandardOutput.Close();
+            Percentage = 100;
+            FFMPEG.Dispose();
+            CacheStatus = CacheStatus.Cached;
         }
 
         #region IDisposable Support
