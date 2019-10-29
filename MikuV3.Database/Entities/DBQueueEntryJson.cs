@@ -1,19 +1,17 @@
-﻿using MikuV3.Music.Enums;
-using MikuV3.Music.ServiceManager.Entities;
+﻿using MikuV3.Music.ServiceManager.Entities;
 using MikuV3.Music.ServiceManager.Enums;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace MikuV3.Music.Entities
+namespace MikuV3.Database.Entities
 {
     public class DBQueueEntryJson
     {
         public DBQueueEntryJson()
-        {
+        {}
 
-        }
         public DBQueueEntryJson(ServiceResult serviceResult)
         {
             ContentService = serviceResult.ContentService;

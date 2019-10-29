@@ -1,6 +1,7 @@
 ﻿using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 using DSharpPlus.VoiceNext;
+using MikuV3.Database.Entities;
 using MikuV3.Music.Enums;
 using MikuV3.Music.ServiceManager.Entities;
 using MikuV3.Music.ServiceManager.Enums;
@@ -62,7 +63,6 @@ namespace MikuV3.Music.Entities
             return false;
         }
 
-        //This will move to the Servicemanager library soon
         public async Task<ServiceResult> QueueSong(CommandContext ctx, string songString, int pos = -1)
         {
             var su = new ServiceManager.ServiceResolver();
@@ -79,12 +79,12 @@ namespace MikuV3.Music.Entities
                 //Database.AddToQueue(ctx.Guild, ctx.Member.Id, encodedJson);
                 TempQueue.Add(new QueueEntry(sr, ctx.Member.Id, TempQueue.Count));
                 if (TempQueue.Count == 2) NextSong = new QueueEntry(sr, ctx.Member.Id, TempQueue.Count);
-                if (Vnc.Channel != null && (Playstate == Playstate.NotPlaying || Playstate == Playstate.Stopped)) await PlaySong(); 
+                if (Vnc.Channel != null && (Playstate == Playstate.NotPlaying || Playstate == Playstate.Stopped)) await PreparePlayback(); 
             }
             return sr;
         }
 
-        public async Task<QueueEntry> PlaySong()
+        public async Task<QueueEntry> PreparePlayback()
         {
             try
             {
@@ -113,7 +113,7 @@ namespace MikuV3.Music.Entities
                     NextSong.ServiceResult.StartCaching();
                 }
                 Playstate = Playstate.Playing;
-                PlayTask = Task.Run(PlayCur);
+                PlayTask = Task.Run(PlayCurrentSong);
             }
             catch (Exception ex)
             {
@@ -122,7 +122,7 @@ namespace MikuV3.Music.Entities
             return CurrentSong;
         }
 
-        public async Task PlayCur()
+        public async Task PlayCurrentSong()
         {
             try
             {
@@ -149,7 +149,10 @@ namespace MikuV3.Music.Entities
                     var hasPacket = currentPCMCache.TryPeek(out var none);
                     //If its paused OR THE PACKET QUEUE INTERNALLY OF DSHARPPLUS or there is no packet ready, we skip a cycle
                     if (!hasPacket || GetPacketQueueCount() > 50 || Playstate == Playstate.Paused)
+                    {
+                        await Task.Delay(3);
                         continue;
+                    }
                     //actually take the first packet now
                     currentPCMCache.TryDequeue(out var packet);
                     //This is to see how far we have advanced into the song yet
@@ -175,7 +178,7 @@ namespace MikuV3.Music.Entities
                 LastSong = CurrentSong;
                 CurrentSong = NextSong;
                 //If there#s still songs in queue, start the playing process again
-                if (TempQueue.Count != 0)await PlaySong();
+                if (TempQueue.Count != 0)await PreparePlayback();
             }
             catch (Exception ex)
             {
