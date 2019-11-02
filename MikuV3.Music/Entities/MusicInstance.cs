@@ -1,8 +1,13 @@
 ﻿using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 using DSharpPlus.VoiceNext;
+using Microsoft.EntityFrameworkCore;
+using MikuV3.Database;
 using MikuV3.Database.Entities;
 using MikuV3.Music.Enums;
+using MikuV3.Music.EventArgs;
+using MikuV3.Music.Extensions;
+using MikuV3.Music.ServiceManager;
 using MikuV3.Music.ServiceManager.Entities;
 using MikuV3.Music.ServiceManager.Enums;
 using MikuV3.Music.ServiceManager.ServiceExtractors;
@@ -12,6 +17,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -21,21 +27,38 @@ namespace MikuV3.Music.Entities
 {
     public class MusicInstance
     {
+        public delegate Task playbackFinished(PlaybackFinishedEventArgs e);
+        public event playbackFinished PlaybackFinished;
+
+        public delegate Task playbackErrored(PlaybackErroredEventArgs e);
+        public event playbackErrored PlaybackErrored;
+
         public DiscordGuild Guild { get; set; }
+
         public DiscordChannel UsedChannel { get; set; }
         public DiscordChannel VoiceChannel { get; set; }
+
         public Playstate Playstate { get; set; }
         public RepeatMode RepeatMode { get; set; }
         public int RepeatAllPos { get; set; }
         public ShuffleMode ShuffleMode { get; set; }
+
         public DateTime AloneTime { get; set; }
         public CancellationTokenSource AloneCTS { get; set; }
+
         public VoiceNextConnection Vnc { get; set; }
-        public QueueEntry CurrentSong { get; set; }
-        public QueueEntry NextSong { get; set; }
-        public QueueEntry LastSong { get; set; }
-        public Task PlayTask { get; set; }
-        public List<QueueEntry> TempQueue = new List<QueueEntry>();
+
+        public QueueEntryInfo CurrentSong { get; set; }
+        public ServiceResult CurrentSongServiceResult { get; set; }
+
+        public QueueEntryInfo NextSong { get; set; }
+        public ServiceResult NextSongServiceResult { get; set; }
+
+        public QueueEntryInfo LastSong { get; set; }
+
+        public Task PlaybackTask { get; set; }
+
+        public QueueDBContext DbContext { get; set; }
 
         public MusicInstance(DiscordGuild guild)
         {
@@ -45,6 +68,7 @@ namespace MikuV3.Music.Entities
             RepeatMode = RepeatMode.Off;
             RepeatAllPos = 0;
             ShuffleMode = ShuffleMode.Off;
+            DbContext = new QueueDBContext();
         }
 
         /// <summary>
@@ -65,55 +89,84 @@ namespace MikuV3.Music.Entities
 
         public async Task<ServiceResult> QueueSong(CommandContext ctx, string songString, int pos = -1)
         {
-            var su = new ServiceManager.ServiceResolver();
-            var gs = su.GetService(songString);
-            if (gs.Playlist != Playlist.No) gs.Playlist = Playlist.No;
-            var srs = await su.GetServiceResults(songString, gs);
-            var sr = srs[0];
-            if (sr != null)
+            var serviceResolver = new ServiceManager.ServiceResolver();
+            var songService = serviceResolver.GetService(songString);
+            if (songService.Playlist != Playlist.No) songService.Playlist = Playlist.No;
+            var ServiceResults = await serviceResolver.GetServiceResults(songString, songService);
+            if (ServiceResults != null)
             {
-                Console.WriteLine(sr.Artist + " - " + sr.Title);
-                var plainJson = JsonConvert.SerializeObject(new DBQueueEntryJson(sr));
-                var plainBytes = Encoding.UTF8.GetBytes(plainJson);
-                var encodedJson = Convert.ToBase64String(plainBytes);
-                //Database.AddToQueue(ctx.Guild, ctx.Member.Id, encodedJson);
-                TempQueue.Add(new QueueEntry(sr, ctx.Member.Id, TempQueue.Count));
-                if (TempQueue.Count == 2) NextSong = new QueueEntry(sr, ctx.Member.Id, TempQueue.Count);
-                if (Vnc.Channel != null && (Playstate == Playstate.NotPlaying || Playstate == Playstate.Stopped)) await PreparePlayback(); 
+                var oldCount = await DbContext.GetGuildQueueCount(Guild.Id);
+                if (pos == -1)
+                {
+                    ServiceResults.Reverse();
+                    foreach (var result in ServiceResults)
+                    {
+                        await DbContext.AddToGuildQueue(Guild.Id, ctx.Member.Id, result);
+                    }
+                }
+                else
+                {
+                    ServiceResults.Reverse();
+                    foreach (var result in ServiceResults)
+                    {
+                        await DbContext.InsertToGuildQueue(Guild.Id, ctx.Member.Id, result, pos);
+                    }
+                }
+                if (oldCount == 1)
+                {
+                    NextSong = new QueueEntryInfo(new DBQueueEntryJson(ServiceResults[0]), ctx.Member.Id, Guild.Id, DateTimeOffset.UtcNow, 1);
+                    NextSongServiceResult = ServiceResults[0];
+                }
+
+                if (Vnc.Channel != null 
+                    && (Playstate == Playstate.NotPlaying 
+                    || Playstate == Playstate.Stopped)) await PreparePlayback(); 
             }
-            return sr;
+            return null;
         }
 
-        public async Task<QueueEntry> PreparePlayback()
+        public async Task<(QueueEntryInfo, ServiceResult)> GetNextSong()
+        {
+            var queue = await DbContext.GetGuildQueue(Guild.Id);
+            int nextSong = 0;
+            if (queue.Count != 1 && RepeatMode == RepeatMode.All)
+                RepeatAllPos++;
+            if (RepeatAllPos >= queue.Count)
+                RepeatAllPos = 0;
+            if (ShuffleMode == ShuffleMode.Off)
+                nextSong = queue[0].Position;
+            else
+                nextSong = queue[new Random().Next(0, queue.Count)].Position;
+            if (RepeatMode == RepeatMode.All)
+                nextSong = queue[RepeatAllPos].Position;
+            if (RepeatMode == RepeatMode.On)
+                nextSong = CurrentSong.Position;
+            var serviceManager = new ServiceResolver();
+            var result = await serviceManager.GetServiceResults(queue[nextSong].DBTrackInfo.Url, 
+                new ContentServiceMatch(queue[nextSong].DBTrackInfo.ContentService,
+                Playlist.No));
+            return (queue[nextSong], result[0]);
+        }
+
+        public async Task<QueueEntryInfo> PreparePlayback()
         {
             try
             {
-                await Task.Delay(0);
-                var queue = TempQueue;
-                CurrentSong = queue[0];
-                var cur = LastSong;
-                if (queue.Count != 1 && RepeatMode == RepeatMode.All)
-                    RepeatAllPos++;
-                if (RepeatAllPos >= queue.Count)
-                    RepeatAllPos = 0;
-                if (ShuffleMode == ShuffleMode.Off && queue.Count > 1)
-                    NextSong = queue[1];
-                else
-                    if (queue.Count > 1)
-                    NextSong = queue[new Random().Next(0, queue.Count)];
-                if (RepeatMode == RepeatMode.All && queue.Count > 1)
+                if (CurrentSong == null)
                 {
-                    NextSong = queue[RepeatAllPos];
+                    var first = await GetNextSong();
+                    CurrentSong = first.Item1;
+                    CurrentSongServiceResult = first.Item2;
                 }
-                if (RepeatMode == RepeatMode.On && queue.Count > 1)
+                var next = await GetNextSong();
+                if (NextSong == null && await DbContext.GetGuildQueueCount(Guild.Id) > 1)
                 {
-                    NextSong = cur;
-                }
-                if (NextSong?.ServiceResult.Slow == true){
-                    NextSong.ServiceResult.StartCaching();
+                    NextSong = next.Item1;
+                    NextSongServiceResult = next.Item2;
+                    if (NextSongServiceResult.Slow) NextSongServiceResult.StartCaching();
                 }
                 Playstate = Playstate.Playing;
-                PlayTask = Task.Run(PlayCurrentSong);
+                PlaybackTask = Task.Run(PlayCurrentSong);
             }
             catch (Exception ex)
             {
@@ -126,37 +179,63 @@ namespace MikuV3.Music.Entities
         {
             try
             {
+                Console.WriteLine(CurrentSong.Position);
+                Console.WriteLine(CurrentSong.DBTrackInfo.Title);
+                Console.WriteLine(CurrentSongServiceResult.Title);
+
                 var tx = Vnc.GetTransmitStream();
                 //If the next songs is from a slow Service, it sends an alert that the buffering isnt ready yet
-                if (CurrentSong.ServiceResult.Slow && CurrentSong.ServiceResult.CacheStatus == CacheStatus.Rendering)
+                if (CurrentSongServiceResult.Slow 
+                    && CurrentSongServiceResult.CacheStatus == CacheStatus.Rendering)
                 {
                     await UsedChannel.SendMessageAsync("Slow service, please wait a bit while we buffer for smooth playback");
                 }
+
                 //Start caching if it wasnt already
-                if (CurrentSong.ServiceResult.PCMQueue == null && CurrentSong.ServiceResult.FillCacheTask == null)
+                if (CurrentSongServiceResult.PCMQueue == null 
+                    && CurrentSongServiceResult.FillCacheTask == null)
                 {
-                    CurrentSong.ServiceResult.StartCaching();
+                    CurrentSongServiceResult.StartCaching();
                 }
+
                 //Wait until the the slow Serice is ready to Play (PlayReady wau)
-                while (CurrentSong.ServiceResult.CacheStatus != CacheStatus.PlayReady && CurrentSong.ServiceResult.Slow) await Task.Delay(100);
+                while (CurrentSongServiceResult.CacheStatus != CacheStatus.PlayReady 
+                    && CurrentSongServiceResult.Slow) await Task.Delay(100);
+
                 //More of a non slow thing, wait until there is actually something cached
-                while (CurrentSong.ServiceResult.PCMQueue == null)await Task.Delay(100);
-                var currentPCMCache = CurrentSong.ServiceResult.PCMQueue;
+                while (CurrentSongServiceResult.PCMQueue == null)
+                {
+                    await Task.Delay(100);
+                }
+
+                var currentPCMCache = CurrentSongServiceResult.PCMQueue;
+
                 //The main fun
-                while (CurrentSong.ServiceResult.CacheStatus != CacheStatus.Cached || currentPCMCache.Count > 0)
+                while (CurrentSongServiceResult.CacheStatus != CacheStatus.Cached 
+                    || currentPCMCache.Count > 0)
                 {
                     //See if there is a packet ready (just see, not take)
                     var hasPacket = currentPCMCache.TryPeek(out var none);
+
                     //If its paused OR THE PACKET QUEUE INTERNALLY OF DSHARPPLUS or there is no packet ready, we skip a cycle
-                    if (!hasPacket || GetPacketQueueCount() > 50 || Playstate == Playstate.Paused)
+                    
+                    if (!hasPacket 
+                        || GetPacketQueueCount() > 50 
+                        || Playstate == Playstate.Paused)
                     {
                         await Task.Delay(3);
                         continue;
                     }
+
                     //actually take the first packet now
                     currentPCMCache.TryDequeue(out var packet);
+
                     //This is to see how far we have advanced into the song yet
-                    if (!CurrentSong.ServiceResult.CurrentPosition.IsRunning) CurrentSong.ServiceResult.CurrentPosition.Start();
+                    if (!CurrentSongServiceResult.CurrentPosition.IsRunning)
+                    {
+                        CurrentSongServiceResult.CurrentPosition.Start();
+                    }
+
                     //Write to the VoiceStream, try/catch cause sometimes it can oof, then its better to skip a bit than fail as a whole
                     try
                     {
@@ -167,18 +246,26 @@ namespace MikuV3.Music.Entities
                     
                 }
                 //Get rid of stuff and pause
-                CurrentSong.ServiceResult.Dispose();
-                CurrentSong.ServiceResult.CurrentPosition.Stop();
+                CurrentSongServiceResult.Dispose();
+                CurrentSongServiceResult.CurrentPosition.Stop();
                 //Clear everything
+               
                 await tx.FlushAsync();
                 await Vnc.WaitForPlaybackFinishAsync();
                 //Logic here to not delete the first song but the one that was played, this might be not the right way
-                TempQueue.Remove(CurrentSong);
+
+                await DbContext.DeleteFromGuildQueue(Guild.Id, CurrentSong.Position);
+
                 Playstate = Playstate.NotPlaying;
                 LastSong = CurrentSong;
                 CurrentSong = NextSong;
+                CurrentSongServiceResult = NextSongServiceResult;
+
                 //If there#s still songs in queue, start the playing process again
-                if (TempQueue.Count != 0)await PreparePlayback();
+                if (await DbContext.GetGuildQueueCount(Guild.Id) != 0)
+                {
+                    await PreparePlayback();
+                }
             }
             catch (Exception ex)
             {

@@ -1,4 +1,5 @@
 ﻿using DSharpPlus;
+using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 using MikuV3.Music.Entities;
 using System;
@@ -45,6 +46,15 @@ namespace MikuV3.Music.Extensions
         public MusicInstance GetMusicInstance(DiscordGuild guild)
         {
             return musicInstances.GetOrAdd(guild.Id, key => new MusicInstance(guild));
+        }
+    }
+
+    public static class DirectMusicExtensions
+    {
+        public static MusicInstance GetMusicInstance(this CommandContext ctx)
+        {
+            var ex = ctx.Client.GetExtension<MusicExtension>();
+            return ex.GetMusicInstance(ctx.Guild);
         }
     }
 }

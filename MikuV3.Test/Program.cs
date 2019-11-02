@@ -1,4 +1,10 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using MikuV3.Database;
+using MikuV3.Database.Entities;
+using MikuV3.Music.ServiceManager.Enums;
+using Newtonsoft.Json;
+using System;
+using System.Text;
 
 namespace MikuV3.Test
 {
@@ -6,7 +12,7 @@ namespace MikuV3.Test
     {
         static void Main(string[] args)
         {
-            Console.ReadKey();
+
         }
     }
 }

@@ -44,14 +44,13 @@ namespace MikuV3.Music.Commands
         {
             var ex = ctx.Client.GetExtension<MusicExtension>();
             var g = ex.GetMusicInstance(ctx.Guild);
-            await ctx.RespondAsync(Math.Round(g.CurrentSong.ServiceResult.CurrentPosition.Elapsed.TotalSeconds,2).ToString() + " of " + Math.Round(g.CurrentSong.ServiceResult.Length.TotalSeconds, 2).ToString());
+            await ctx.RespondAsync(Math.Round(g.CurrentSongServiceResult.CurrentPosition.Elapsed.TotalSeconds,2).ToString() + " of " + Math.Round(g.CurrentSongServiceResult.Length.TotalSeconds, 2).ToString());
         }
 
         [Command("pause")]
-        public async Task Pause (CommandContext ctx)
+        public async Task Pause(CommandContext ctx)
         {
-            var ex = ctx.Client.GetExtension<MusicExtension>();
-            var _mi = ex.GetMusicInstance(ctx.Guild);
+            var _mi = ctx.GetMusicInstance();
             if (_mi.Playstate == Enums.Playstate.Paused)
             {
                 _mi.Playstate = Enums.Playstate.Playing;
@@ -60,7 +59,7 @@ namespace MikuV3.Music.Commands
             {
                 _mi.Playstate = Enums.Playstate.Paused;
                 await Task.Delay(1000);
-                _mi.CurrentSong.ServiceResult.CurrentPosition.Stop();
+                _mi.CurrentSongServiceResult.CurrentPosition.Stop();
             }
             await ctx.RespondAsync(_mi.Playstate.ToString());
         }
@@ -69,8 +68,7 @@ namespace MikuV3.Music.Commands
         [Priority(1)]
         public async Task Play(CommandContext ctx, [RemainingText] string url)
         {
-            var ex = ctx.Client.GetExtension<MusicExtension>();
-            var g = ex.GetMusicInstance(ctx.Guild);
+            var g = ctx.GetMusicInstance();
             g.UsedChannel = ctx.Channel;
             var vnext = ctx.Client.GetVoiceNext();
             if (g.Vnc == null) await g.ConnectToChannel(ctx.Member.VoiceState.Channel, vnext);

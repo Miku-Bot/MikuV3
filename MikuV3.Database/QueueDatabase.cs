@@ -1,24 +1,28 @@
 ﻿using DSharpPlus.Entities;
 using Microsoft.EntityFrameworkCore;
 using MikuV3.Database.Entities;
+using MikuV3.Music.ServiceManager.Enums;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace MikuV3.Database
 {
-    public class QueueDataBaseContext : DbContext
+    public class QueueDBContext : DbContext
     {
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-            => optionsBuilder.UseNpgsql("Host=mee.moe;Database=MikuV3_;Username=;Password=");
-    }
+            => optionsBuilder
+            .UseNpgsql("Host=meek.moe;Database=MikuV3_;Username=;Password=");
 
-    public class QueueDatabase
-    {
-        public async Task<List<QueueEntryInfo>> GetQueue(DiscordGuild guild)
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-
-            return null;
+            modelBuilder.Entity<QueueEntryInfo>(ctx => {
+                ctx.HasKey(key => new { key.Position, key.GuildId });
+            });
         }
+
+        public DbSet<QueueEntryInfo> QueueEntries { get; set; }
     }
 }

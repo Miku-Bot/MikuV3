@@ -4,6 +4,7 @@ using DSharpPlus.Interactivity;
 using DSharpPlus.VoiceNext;
 using Microsoft.Extensions.DependencyInjection;
 using MikuV3.Core.Entities;
+using MikuV3.Music.Database.Extensions;
 using MikuV3.Music.Extensions;
 using MikuV3.Music.ServiceManager;
 using System;
@@ -19,6 +20,7 @@ namespace MikuV3.Core
         static InteractivityExtension _inext { get; set; }
         static VoiceNextExtension _vnext { get; set; }
         static MusicExtension _me { get; set; }
+        static DatabaseExtension _dbe { get; set; }
 
         public BotCore(BotConfig.Root botConfig)
         {
@@ -51,6 +53,7 @@ namespace MikuV3.Core
 
             _vnext = _c.UseVoiceNext();
             _me = _c.UseMusic();
+            _dbe = _c.UseDatabase();
 
             _cnext.CommandErrored += e =>
             {
